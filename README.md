@@ -1,6 +1,10 @@
 
 # customs-declare-imports
 
+
+[![Build Status](https://travis-ci.org/hmrc/customs-declare-imports.svg)](https://travis-ci.org/hmrc/customs-declare-imports) [ ![Download](https://api.bintray.com/packages/hmrc/releases/customs-declare-imports/images/download.svg) ](https://bintray.com/hmrc/releases/customs-declare-imports/_latestVersion)
+
+
 This is a placeholder README.md for a new repository
 
 ### License
