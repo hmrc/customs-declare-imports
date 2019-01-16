@@ -64,9 +64,8 @@ class NotificationsController @Inject()(
   }
 
 
-  private def validateHeaders()(
-    process: NotificationApiHeaders => Future[Result]
-  )(implicit request: Request[NodeSeq], hc: HeaderCarrier): Future[Result] = {
+  private def validateHeaders()(process: NotificationApiHeaders => Future[Result])
+                             (implicit request: Request[NodeSeq], hc: HeaderCarrier): Future[Result] = {
     val accept = request.headers.get(HeaderNames.ACCEPT)
     val contentType = request.headers.get(HeaderNames.CONTENT_TYPE)
     val clientId = request.headers.get("X-CDS-Client-ID")
@@ -75,17 +74,17 @@ class NotificationsController @Inject()(
     val badgeIdentifier = request.headers.get("X-Badge-Identifier")
 
     //TODO authorisation header validation
-    if (accept.isEmpty) {
-      Future.successful(NotAcceptable(NotAcceptableResponse.toXml))
-    } else if (contentType.isEmpty) {
-      Future.successful(UnsupportedMediaType)
-    } else if (clientId.isEmpty || conversationId.isEmpty || eori.isEmpty) {
-      Future.successful(InternalServerError(HeaderMissingErrorResponse.toXml))
-    } else
-      process(
-        NotificationApiHeaders(accept.get, contentType.get, clientId.get, badgeIdentifier, conversationId.get, eori.get)
-      )
+    (accept, contentType, clientId, conversationId, eori) match {
+      case (Some(acceptValue), Some(content), Some(client), Some(conversation), Some(eoriValue)) => {
+        process(NotificationApiHeaders(acceptValue, content, client, badgeIdentifier, conversation, eoriValue))
+      }
+      case (None, _, _, _, _) => Future.successful(NotAcceptable(NotAcceptableResponse.toXml))
+      case (_, None, _, _, _) => Future.successful(UnsupportedMediaType)
+      case _ => Future.successful(InternalServerError(HeaderMissingErrorResponse.toXml))
+    }
+
   }
+
 
   private def getNotificationFromRequest(
                                           headers: NotificationApiHeaders
