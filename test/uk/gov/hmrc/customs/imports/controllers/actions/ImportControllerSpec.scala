@@ -34,7 +34,7 @@ class ImportControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
     "return InsufficientEnrolments when EORI number is missing" in {
       userWithoutEori()
 
-      val result: Future[Result] = route(app, fakeRequest).get
+      val result: Future[Result] = route(app, fakeRequest).value
 
       status(result) must be(UNAUTHORIZED)
       val content = contentAsJson(result)
@@ -44,7 +44,7 @@ class ImportControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
     "return a failure  when a authorisation fails" in {
       withUnAuthorizedUser()
 
-      val result = route(app, fakeRequest).get
+      val result = route(app, fakeRequest).value
 
       status(result) must be(UNAUTHORIZED)
       val content = contentAsJson(result)
@@ -56,7 +56,7 @@ class ImportControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
       withAuthorizedUser()
       withDataSaved(true)
 
-      val result = route(app, fakeRequest).get
+      val result = route(app, fakeRequest).value
 
       status(result) must be(OK)
     }
@@ -65,12 +65,12 @@ class ImportControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
       withAuthorizedUser()
       withDataSaved(false)
 
-      val result = route(app, fakeRequest).get
+      val result = route(app, fakeRequest).value
 
       status(result) must be(INTERNAL_SERVER_ERROR)
 
       val content = contentAsString(result)
-      content.toString() must be("""failed saving submission""")
+      content.toString must be("""failed saving submission""")
     }
 
   }

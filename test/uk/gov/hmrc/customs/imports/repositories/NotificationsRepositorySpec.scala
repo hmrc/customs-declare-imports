@@ -39,22 +39,22 @@ class NotificationsRepositorySpec extends CustomsImportsBaseSpec with BeforeAndA
       repo.save(notification).futureValue must be(true)
 
       // we can now display a list of all the declarations belonging to the current user, searching by EORI
-      val found = repo.findByEori(eori).futureValue
-      found.length must be(1)
-      found.head.eori must be(eori)
-      found.head.conversationId must be(conversationId)
+      val foundDeclarationNotification = repo.findByEori(eori).futureValue
+      foundDeclarationNotification.length must be(1)
+      foundDeclarationNotification.head.eori must be(eori)
+      foundDeclarationNotification.head.conversationId must be(conversationId)
 
-      found.head.dateTimeReceived must be(now)
+      foundDeclarationNotification.head.dateTimeReceived must be(now)
 
       // we can also retrieve the submission individually by conversation Id
-      val got = repo.getByConversationId(conversationId).futureValue.get
-      got.eori must be(eori)
-      got.conversationId must be(conversationId)
+      val declarationNotification1 = repo.getByConversationId(conversationId).futureValue.value
+      declarationNotification1.eori must be(eori)
+      declarationNotification1.conversationId must be(conversationId)
 
       // or we can retrieve it by eori and conversationId
-      val gotAgain = repo.getByEoriAndConversationId(eori, conversationId).futureValue
-      gotAgain.get.eori must be(eori)
-      gotAgain.get.conversationId must be(conversationId)
+      val declarationNotification2 = repo.getByEoriAndConversationId(eori, conversationId).futureValue.value
+      declarationNotification2.eori must be(eori)
+      declarationNotification2.conversationId must be(conversationId)
     }
   }
 }

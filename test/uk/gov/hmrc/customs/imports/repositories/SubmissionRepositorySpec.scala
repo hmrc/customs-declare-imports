@@ -38,36 +38,37 @@ class SubmissionRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfte
       repo.save(submission).futureValue must be(true)
 
       // we can now display a list of all the declarations belonging to the current user, searching by EORI
-      val found = repo.findByEori(eori).futureValue
-      found.length must be(1)
-      found.head.eori must be(eori)
-      found.head.conversationId must be(conversationId)
-      found.head.mrn must be(Some(mrn))
+      val foundSubmission = repo.findByEori(eori).futureValue
+      foundSubmission.length must be(1)
+      foundSubmission.head.eori must be(eori)
+      foundSubmission.head.conversationId must be(conversationId)
+      foundSubmission.head.mrn must be(Some(mrn))
 
       // a timestamp has been generated representing "creation time" of case class instance
-      found.head.submittedTimestamp must (be >= before).and(be <= System.currentTimeMillis())
+      foundSubmission.head.submittedTimestamp must (be >= before).and(be <= System.currentTimeMillis())
 
       // we can also retrieve the submission individually by conversation ID
-      val got = repo.getByConversationId(conversationId).futureValue.get
-      got.eori must be(eori)
-      got.conversationId must be(conversationId)
-      got.mrn must be(Some(mrn))
+      val submission1 = repo.getByConversationId(conversationId).futureValue.value
+      submission1.eori must be(eori)
+      submission1.conversationId must be(conversationId)
+      submission1.mrn must be(Some(mrn))
 
       // or we can retrieve it by eori and MRN
-      val gotAgain = repo.getByEoriAndMrn(eori, mrn).futureValue.get
-      gotAgain.eori must be(eori)
-      gotAgain.conversationId must be(conversationId)
-      gotAgain.mrn must be(Some(mrn))
+      val submission2 = repo.getByEoriAndMrn(eori, mrn).futureValue.value
+      submission2.eori must be(eori)
+      submission2.conversationId must be(conversationId)
+      submission2.mrn must be(Some(mrn))
 
       // update status test
-      val submission1 = repo.getByConversationId(conversationId).futureValue
+      val submissionToUpdate = repo.getByConversationId(conversationId).futureValue.value
 
-      val updatedSubmission = submission1.get.copy(status = Some("Accepted"))
-      val updateStatusResult = repo.updateSubmission(updatedSubmission).futureValue
-      updateStatusResult must be(true)
-      val newSubmission = repo.getByConversationId(conversationId).futureValue
+      val updatedSubmission = submissionToUpdate.copy(status = Some("Accepted"))
 
-      newSubmission.get must be(updatedSubmission)
+      repo.updateSubmission(updatedSubmission).futureValue must be(true)
+
+      val newSubmission = repo.getByConversationId(conversationId).futureValue.value
+
+      newSubmission must be(updatedSubmission)
     }
   }
 }

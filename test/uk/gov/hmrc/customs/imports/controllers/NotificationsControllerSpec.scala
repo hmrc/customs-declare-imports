@@ -60,7 +60,7 @@ class NotificationsControllerSpec extends CustomsImportsBaseSpec with ImportsTes
     "successfully accept Notification" in {
       withNotificationSaved(true)
 
-      val result = route(app, FakeRequest(POST, uri).withHeaders(validHeaders.toSeq: _*).withXmlBody(validXML)).get
+      val result = route(app, FakeRequest(POST, uri).withHeaders(validHeaders.toSeq: _*).withXmlBody(validXML)).value
 
       status(result) must be(ACCEPTED)
     }
@@ -68,13 +68,13 @@ class NotificationsControllerSpec extends CustomsImportsBaseSpec with ImportsTes
     "failed to save Notification" in {
       withNotificationSaved(false)
 
-      val result = route(app, FakeRequest(POST, uri).withHeaders(validHeaders.toSeq: _*).withXmlBody(validXML)).get
+      val result = route(app, FakeRequest(POST, uri).withHeaders(validHeaders.toSeq: _*).withXmlBody(validXML)).value
 
       status(result) must be(INTERNAL_SERVER_ERROR)
     }
 
     "500 response if no eori header in Notification" in {
-      val result = route(app, FakeRequest(POST, uri).withHeaders(noEoriHeaders.toSeq: _*).withXmlBody(validXML)).get
+      val result = route(app, FakeRequest(POST, uri).withHeaders(noEoriHeaders.toSeq: _*).withXmlBody(validXML)).value
 
       status(result) must be(INTERNAL_SERVER_ERROR)
       contentAsString(result) must be
@@ -86,7 +86,7 @@ class NotificationsControllerSpec extends CustomsImportsBaseSpec with ImportsTes
       withAuthorizedUser()
       haveNotifications(Seq(notification))
 
-      val result = route(app, FakeRequest(GET, getNotificationUri)).get
+      val result = route(app, FakeRequest(GET, getNotificationUri)).value
 
       status(result) must be(OK)
     }
@@ -96,7 +96,7 @@ class NotificationsControllerSpec extends CustomsImportsBaseSpec with ImportsTes
       withAuthorizedUser()
       withSubmissionNotification(Some(submissionNotification))
 
-      val result = route(app, FakeRequest(GET, submissionNotificationUri).withHeaders(validHeaders.toSeq: _*)).get
+      val result = route(app, FakeRequest(GET, submissionNotificationUri).withHeaders(validHeaders.toSeq: _*)).value
 
       status(result) must be(OK)
     }
@@ -105,7 +105,7 @@ class NotificationsControllerSpec extends CustomsImportsBaseSpec with ImportsTes
       withAuthorizedUser()
       withSubmissionNotification(None)
 
-      val result = route(app, FakeRequest(GET, submissionNotificationUri).withHeaders(validHeaders.toSeq: _*)).get
+      val result = route(app, FakeRequest(GET, submissionNotificationUri).withHeaders(validHeaders.toSeq: _*)).value
 
       status(result) must be(NO_CONTENT)
     }

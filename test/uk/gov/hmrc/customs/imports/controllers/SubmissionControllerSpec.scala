@@ -37,7 +37,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       withAuthorizedUser()
       withDataSaved(true)
 
-      val result = route(app, fakeRequest).get
+      val result = route(app, fakeRequest).value
 
       status(result) must be(OK)
     }
@@ -46,7 +46,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       withAuthorizedUser()
       withDataSaved(false)
 
-      val failedResult = route(app, fakeRequest).get
+      val failedResult = route(app, fakeRequest).value
 
       status(failedResult) must be(INTERNAL_SERVER_ERROR)
     }
@@ -59,7 +59,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       withSubmissions(seqSubmissions)
       withNotification(None)
 
-      val result = route(app, FakeRequest("GET", "/submissions")).get
+      val result = route(app, FakeRequest("GET", "/submissions")).value
 
       status(result) must be(OK)
       contentAsJson(result) must be(jsonSeqSubmission)
@@ -70,7 +70,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       withSubmissions(Seq.empty)
       withNotification(None)
 
-      val result = route(app, FakeRequest("GET", "/submissions")).get
+      val result = route(app, FakeRequest("GET", "/submissions")).value
 
       status(result) must be(OK)
     }
