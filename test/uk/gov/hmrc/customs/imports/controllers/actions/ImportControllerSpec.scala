@@ -17,10 +17,13 @@
 package uk.gov.hmrc.customs.imports.controllers.actions
 
 import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.customs.imports.base.{CustomsImportsBaseSpec, ImportsTestData}
 import uk.gov.hmrc.customs.imports.models.SubmissionResponse
+
+import scala.concurrent.Future
 
 class ImportControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
   val uri = "/save-submission-response"
@@ -31,10 +34,23 @@ class ImportControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
     "return InsufficientEnrolments when EORI number is missing" in {
       userWithoutEori()
 
+      val result: Future[Result] = route(app, fakeRequest).get
+
+      status(result) must be(UNAUTHORIZED)
+      val content = contentAsJson(result)
+      content.toString() must be(""""Unauthorized for imports"""")
+    }
+
+    "return a failure  when a authorisation fails" in {
+      withUnAuthorizedUser()
+
       val result = route(app, fakeRequest).get
 
       status(result) must be(UNAUTHORIZED)
+      val content = contentAsJson(result)
+      content.toString() must be(""""Unauthorized for imports"""")
     }
+
 
     "return a success  when a valid request with Enrollments" in {
       withAuthorizedUser()
@@ -52,6 +68,10 @@ class ImportControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
       val result = route(app, fakeRequest).get
 
       status(result) must be(INTERNAL_SERVER_ERROR)
+
+      val content = contentAsString(result)
+      content.toString() must be("""failed saving submission""")
     }
+
   }
 }

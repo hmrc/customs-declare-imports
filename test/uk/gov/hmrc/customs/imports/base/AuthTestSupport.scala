@@ -47,6 +47,15 @@ trait AuthTestSupport extends MockitoSugar {
       )(any(), any())
     ).thenReturn(Future.successful(user.enrolments))
 
+
+  def withUnAuthorizedUser(user: SignedInUser = newUser("12345", "external1")): Unit =
+    when(
+      mockAuthConnector.authorise(
+        ArgumentMatchers.argThat(cdsEnrollmentMatcher(user)),
+        ArgumentMatchers.eq(allEnrolments)
+      )(any(), any())
+    ).thenReturn(Future.failed(new UnsupportedAuthProvider("Trouble at mill")))
+
   def userWithoutEori(user: SignedInUser = newUser("12345", "external1")): Unit =
     when(
       mockAuthConnector.authorise(
@@ -71,4 +80,5 @@ trait AuthTestSupport extends MockitoSugar {
       )
     )
   )
+
 }

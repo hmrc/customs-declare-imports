@@ -35,7 +35,7 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
     callback: Request[A] => Future[Result]
   )(implicit request: Request[A]): Future[Result] =
     authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments) { enrolments =>
-      if (!hasEnrolment(enrolments))
+      if (hasEnrolment(enrolments))
         callback(request)
       else throw InsufficientEnrolments()
     } recoverWith {
@@ -43,16 +43,16 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
     }
 
   private def hasEnrolment(allEnrolments: Enrolments): Boolean =
-    allEnrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber")).isEmpty
+    allEnrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber")).isDefined
 
   def handleFailure(implicit request: Request[_]): PartialFunction[Throwable, Future[Result]] =
     PartialFunction[Throwable, Future[Result]] {
       case _: InsufficientEnrolments =>
         Logger.warn(s"Unauthorised access for ${request.uri}")
-        Future.successful(Unauthorized(Json.toJson("Unauthorized for exports")))
+        Future.successful(Unauthorized(Json.toJson("Unauthorized for imports")))
       case _: AuthorisationException =>
         Logger.warn(s"Unauthorised Exception for ${request.uri}")
-        Future.successful(Unauthorized(Json.toJson("Unauthorized for exports")))
+        Future.successful(Unauthorized(Json.toJson("Unauthorized for imports")))
       case ex: Throwable =>
         Logger.error("Internal server error is " + ex.getMessage)
         Future.successful(InternalServerError(Json.toJson("InternalServerError")))
@@ -62,11 +62,12 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
     callback: AuthorizedRequest[A] => Future[Result]
   )(implicit request: Request[A]): Future[Result] =
     authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments) { enrolments =>
-      val eori = enrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber"))
-      if (eori.isDefined) callback(AuthorizedRequest(request, eori.get.value))
-      else throw InsufficientEnrolments()
+      enrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber"))
+        .fold(throw InsufficientEnrolments()) { eori =>
+                                                callback(AuthorizedRequest(request, eori.value))
+        }
+
     } recoverWith {
       handleFailure
     }
-
 }
