@@ -1,22 +1,23 @@
-import play.core.PlayVersion.current
+import play.core.PlayVersion
 import play.sbt.PlayImport._
-import sbt.Keys.libraryDependencies
 import sbt._
 
 object AppDependencies {
 
-  val compile = Seq(
-
-    "uk.gov.hmrc"             %% "play-reactivemongo"       % "6.2.0",
-    "uk.gov.hmrc"             %% "bootstrap-play-25"        % "4.7.0"
+  val compile: Seq[ModuleID] = Seq(
+    "uk.gov.hmrc" %% "play-reactivemongo" % "6.2.0",
+    ws,
+    "uk.gov.hmrc" %% "bootstrap-play-25" % "4.6.0",
+    "uk.gov.hmrc" %% "wco-dec" % "0.16.0",
+    "uk.gov.hmrc" %% "logback-json-logger" % "4.1.0"
   )
 
-  val test = Seq(
-    "org.scalatest"           %% "scalatest"                % "3.0.4"                 % "test",
-    "com.typesafe.play"       %% "play-test"                % current                 % "test",
-    "org.pegdown"             %  "pegdown"                  % "1.6.0"                 % "test, it",
-    "uk.gov.hmrc"             %% "service-integration-test" % "0.2.0"                 % "test, it",
-    "org.scalatestplus.play"  %% "scalatestplus-play"       % "2.0.0"                 % "test, it"
+  def test(scope: String = "test"): Seq[ModuleID] = Seq(
+    "uk.gov.hmrc" %% "hmrctest" % "3.1.0" % scope,
+    "org.scalatest" %% "scalatest" % "3.0.4" % scope,
+    "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.1" % "test",
+    "org.pegdown" % "pegdown" % "1.6.0" % scope,
+    "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
+    "org.mockito" % "mockito-core" % "2.13.0" % "test"
   )
-
 }

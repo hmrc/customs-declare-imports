@@ -1,0 +1,138 @@
+/*
+ * Copyright 2019 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package uk.gov.hmrc.customs.imports.controllers
+
+import com.google.inject.Singleton
+import javax.inject.Inject
+import org.joda.time.DateTime
+import play.api.Logger
+import play.api.http.HeaderNames
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Request, Result}
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.customs.imports.config.AppConfig
+import uk.gov.hmrc.customs.imports.metrics.ImportsMetrics
+import uk.gov.hmrc.customs.imports.models._
+import uk.gov.hmrc.customs.imports.repositories.NotificationsRepository
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.wco.dec._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.xml.NodeSeq
+import uk.gov.hmrc.customs.imports.metrics.MetricIdentifiers._
+
+@Singleton
+class NotificationsController @Inject()(
+  appConfig: AppConfig,
+  authConnector: AuthConnector,
+  notificationsRepository: NotificationsRepository,
+  metrics: ImportsMetrics
+) extends ImportController(authConnector) {
+
+  def saveNotification(): Action[NodeSeq] = Action.async(parse.xml) { implicit request =>
+    validateHeaders() {
+      metrics.startTimer(notificationMetric)
+      headers: NotificationApiHeaders =>
+        save(getNotificationFromRequest(headers))
+    }
+  }
+
+  //TODO response should be streamed or paginated depending on the no of notifications.
+  def getNotifications(eori: String): Action[AnyContent] = Action.async { implicit request =>
+    authorizedWithEnrolment[AnyContent](_ => findByEori(eori))
+  }
+
+  def getSubmissionNotifications(conversationId: String): Action[AnyContent] = Action.async { implicit request =>
+    authorizedWithEori[AnyContent] { authorizedRequest =>
+      findByEoriAndConversationId(authorizedRequest.loggedUserEori, conversationId)
+    }
+  }
+
+
+  private def validateHeaders()(process: NotificationApiHeaders => Future[Result])
+                             (implicit request: Request[NodeSeq], hc: HeaderCarrier): Future[Result] = {
+    val accept = request.headers.get(HeaderNames.ACCEPT)
+    val contentType = request.headers.get(HeaderNames.CONTENT_TYPE)
+    val clientId = request.headers.get("X-CDS-Client-ID")
+    val conversationId = request.headers.get("X-Conversation-ID")
+    val eori = request.headers.get("X-EORI-Identifier")
+    val badgeIdentifier = request.headers.get("X-Badge-Identifier")
+
+    //TODO authorisation header validation
+    (accept, contentType, clientId, conversationId, eori) match {
+      case (Some(acceptValue), Some(content), Some(client), Some(conversation), Some(eoriValue)) => {
+        process(NotificationApiHeaders(acceptValue, content, client, badgeIdentifier, conversation, eoriValue))
+      }
+      case (None, _, _, _, _) => Future.successful(NotAcceptable(NotAcceptableResponse.toXml))
+      case (_, None, _, _, _) => Future.successful(UnsupportedMediaType)
+      case _ => Future.successful(InternalServerError(HeaderMissingErrorResponse.toXml))
+    }
+
+  }
+
+
+  private def getNotificationFromRequest(
+                                          headers: NotificationApiHeaders
+                                        )(implicit request: Request[NodeSeq], hc: HeaderCarrier) = {
+    val metadata = MetaData.fromXml(request.body.toString)
+
+    val notification = DeclarationNotification(
+      DateTime.now,
+      headers.conversationId,
+      headers.eori,
+      headers.badgeId,
+      DeclarationMetadata(
+        metadata.wcoDataModelVersionCode,
+        metadata.wcoTypeName,
+        metadata.responsibleCountryCode,
+        metadata.responsibleAgencyName,
+        metadata.agencyAssignedCustomizationCode,
+        metadata.agencyAssignedCustomizationVersionCode
+      ),
+      metadata.response
+    )
+
+    Logger.debug("\033[34m Notification is " + notification + "\033[0m")
+
+    notification
+  }
+
+  private def save(notification: DeclarationNotification)(implicit hc: HeaderCarrier): Future[Result] =
+    notificationsRepository
+      .save(notification)
+      .map {
+        case true =>
+          metrics.incrementCounter(notificationMetric)
+          Accepted
+        case _ =>
+          metrics.incrementCounter(notificationMetric)
+          InternalServerError(NotificationFailedErrorResponse.toXml)
+      }
+
+  private def findByEori(eori: String)(implicit hc: HeaderCarrier): Future[Result] =
+    notificationsRepository.findByEori(eori).map(res => Ok(Json.toJson(res)))
+
+  private def findByEoriAndConversationId(eori: String, conversationId: String)(
+    implicit hc: HeaderCarrier
+  ): Future[Result] =
+    notificationsRepository.getByEoriAndConversationId(eori, conversationId).map {
+      case Some(notification) => Ok(Json.toJson(notification))
+      case None => NoContent
+    }
+
+}
