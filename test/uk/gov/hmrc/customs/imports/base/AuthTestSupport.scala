@@ -54,7 +54,7 @@ trait AuthTestSupport extends MockitoSugar {
         ArgumentMatchers.argThat(cdsEnrollmentMatcher(user)),
         ArgumentMatchers.eq(allEnrolments)
       )(any(), any())
-    ).thenReturn(Future.failed(new UnsupportedAuthProvider("Trouble at mill")))
+    ).thenReturn(Future.failed(UnsupportedAuthProvider("Trouble at mill")))
 
   def userWithoutEori(user: SignedInUser = newUser("12345", "external1")): Unit =
     when(
@@ -68,8 +68,6 @@ trait AuthTestSupport extends MockitoSugar {
     Credentials("2345235235", "GovernmentGateway"),
     Name(Some("Aldo"), Some("Rain")),
     Some("amina@hmrc.co.uk"),
-    eori,
-    externalId,
     Some("Int-ba17b467-90f3-42b6-9570-73be7b78eb2b"),
     Some(AffinityGroup.Individual),
     Enrolments(

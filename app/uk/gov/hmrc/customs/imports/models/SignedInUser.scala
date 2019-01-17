@@ -23,9 +23,16 @@ case class SignedInUser(
   credentials: Credentials,
   name: Name,
   email: Option[String],
-  eori: String,
-  externalId: String,
   internalId: Option[String],
   affinityGroup: Option[AffinityGroup],
   enrolments: Enrolments
-)
+){
+  lazy val eori: Option[String] = enrolments.getEnrolment(SignedInUser.cdsEnrolmentName).flatMap(_.getIdentifier(SignedInUser.eoriIdentifierKey)).map(_.value)
+
+}
+
+object SignedInUser {
+  val cdsEnrolmentName: String = "HMRC-CUS-ORG"
+
+  val eoriIdentifierKey: String = "EORINumber"
+}

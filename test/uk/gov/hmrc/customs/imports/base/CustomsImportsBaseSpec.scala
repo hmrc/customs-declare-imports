@@ -18,9 +18,10 @@ package uk.gov.hmrc.customs.imports.base
 
 import java.util.UUID
 
+import akka.actor.ActorSystem
 import akka.stream.Materializer
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{mock, when}
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -53,7 +54,7 @@ trait CustomsImportsBaseSpec
 
   val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
   val mockNotificationsRepository: NotificationsRepository = mock[NotificationsRepository]
-
+  val mockActorSystem: ActorSystem = mock[ActorSystem]
   val mockMNetrics: ImportsMetrics = mock[ImportsMetrics]
 
   def injector: Injector = app.injector

@@ -26,7 +26,7 @@ import uk.gov.hmrc.customs.imports.models.SubmissionResponse
 import scala.concurrent.Future
 
 class ImportControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
-  val uri = "/save-submission-response"
+  val uri = "/submit-declaration"
   val jsonBody: JsValue = Json.toJson[SubmissionResponse](submissionResponse)
   val fakeRequest: FakeRequest[JsValue] = FakeRequest("POST", uri).withBody(jsonBody)
 
