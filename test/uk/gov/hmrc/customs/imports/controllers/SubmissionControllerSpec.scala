@@ -23,7 +23,7 @@ import uk.gov.hmrc.customs.imports.base.{CustomsImportsBaseSpec, ImportsTestData
 import uk.gov.hmrc.customs.imports.models.{Submission, SubmissionData, SubmissionResponse}
 
 class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
-  val saveUri = "/save-submission-response"
+  val saveUri = "/submit-declaration"
 
   val jsonBody: JsValue = Json.toJson[SubmissionResponse](submissionResponse)
 
@@ -32,7 +32,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
   val submissionJson: JsValue = Json.toJson[Submission](submission)
   val jsonSeqSubmission: JsValue = Json.toJson[Seq[SubmissionData]](seqSubmissionData)
 
-  "POST /save-submission-response" should {
+  "POST /submit-declaration " should {
     "return 200 when submission has been saved" in {
       withAuthorizedUser()
       withDataSaved(true)

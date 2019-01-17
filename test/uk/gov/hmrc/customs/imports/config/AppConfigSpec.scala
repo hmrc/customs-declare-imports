@@ -29,5 +29,17 @@ class AppConfigSpec extends CustomsImportsBaseSpec {
     "have login url" in {
       config.loginUrl must be("http://localhost:9949/auth-login-stub/gg-sign-in")
     }
+
+    "have cancelImportDeclarationUri" in {
+      config.cancelImportDeclarationUri must be("/cancellation-requests")
+    }
+
+    "have customsDeclarationsApiVersion" in {
+      config.customsDeclarationsApiVersion must be("1.0")
+    }
+
+    "have customsDeclarationsEndpoint" in {
+      config.customsDeclarationsEndpoint must be("http://localhost:6790")
+    }
   }
 }

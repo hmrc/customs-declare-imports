@@ -1,6 +1,6 @@
 # microservice specific routes
 
-POST      /save-submission-response                                             uk.gov.hmrc.customs.imports.controllers.SubmissionController.saveSubmissionResponse()
+POST      /submit-declaration                                                   uk.gov.hmrc.customs.imports.controllers.SubmissionController.saveSubmissionResponse()
 
 POST      /customs-declare-imports/notify                                       uk.gov.hmrc.customs.imports.controllers.NotificationsController.saveNotification()
 
