@@ -47,13 +47,13 @@ class SubmissionController @Inject()(
   })
 
   def submitDeclaration():  Action[AnyContent] = Action.async(bodyParser = xmlOrEmptyBody) { implicit request =>
-    implicit val h: Headers = request.headers
+    implicit val headers: Map[String, String] = request.headers.toSimpleMap
     processRequest
   }
 
 
 
-  def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier, h: Headers): Future[Result] = {
+  def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier, h: Map[String, String]): Future[Result] = {
     //    TODO in sequence we need to validate the request????
     //    TODO in sequence we need to validate the headers and extract
     //   TODO change extractHeader code to do validate and extract and return

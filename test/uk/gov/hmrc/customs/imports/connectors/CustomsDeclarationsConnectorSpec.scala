@@ -28,7 +28,7 @@ import reactivemongo.api.ReadPreference
 import reactivemongo.api.commands.{DefaultWriteResult, WriteResult}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.imports.base.{CustomsImportsBaseSpec, ImportsTestData}
-import uk.gov.hmrc.customs.imports.models.{SignedInUser, Submission}
+import uk.gov.hmrc.customs.imports.models.Submission
 import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector

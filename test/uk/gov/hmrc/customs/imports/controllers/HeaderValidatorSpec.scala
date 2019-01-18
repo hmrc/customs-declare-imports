@@ -48,6 +48,18 @@ class HeaderValidatorSpec extends UnitSpec  with ImportsTestData{
       val extractedLrn: Option[String] = validator.extractLrnHeader(Map.empty)
       extractedLrn shouldBe None
     }
+
+    "return Right of validatedHeaderResponse when validateHeaders is called on valid headers" in new SetUp {
+      implicit val h: Map[String, String] = ValidHeaders
+      val result: Either[ErrorResponse, ValidatedHeadersRequest] = validator.validateAndExtractHeaders
+      result should be(Right(ValidatedHeadersRequest(declarantEoriValue, declarantLrnValue)))
+    }
+
+    "return Left ErrorResponse when validateHeaders is called with invalid headers" in new SetUp {
+      implicit val h: Map[String, String] = Map("" -> "")
+      val result: Either[ErrorResponse, ValidatedHeadersRequest] = validator.validateAndExtractHeaders
+      result should be(Left(ErrorResponse.ErrorInternalServerError))
+    }
   }
 
 }

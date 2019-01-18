@@ -34,7 +34,6 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.customs.imports.config.AppConfig
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
-import uk.gov.hmrc.customs.imports.metrics.ImportsMetrics
 import uk.gov.hmrc.customs.imports.repositories.{NotificationsRepository, SubmissionRepository}
 import uk.gov.hmrc.http.SessionKeys
 
@@ -43,12 +42,11 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 trait CustomsImportsBaseSpec
-    extends PlaySpec with GuiceOneAppPerSuite with MockitoSugar with ScalaFutures with AuthTestSupport {
+    extends PlaySpec with GuiceOneAppPerSuite with MockitoSugar with ScalaFutures {
 
   val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
   val mockNotificationsRepository: NotificationsRepository = mock[NotificationsRepository]
   val mockActorSystem: ActorSystem = mock[ActorSystem]
-  val mockMNetrics: ImportsMetrics = mock[ImportsMetrics]
   val mockDeclarationsApiConnector: CustomsDeclarationsConnector = mock[CustomsDeclarationsConnector]
 
   def injector: Injector = app.injector
@@ -60,10 +58,8 @@ trait CustomsImportsBaseSpec
   override lazy val app: Application =
     GuiceApplicationBuilder()
       .overrides(
-        bind[AuthConnector].to(mockAuthConnector),
         bind[SubmissionRepository].to(mockSubmissionRepository),
         bind[NotificationsRepository].to(mockNotificationsRepository),
-        bind[ImportsMetrics].to(mockMNetrics),
         bind[CustomsDeclarationsConnector].to(mockDeclarationsApiConnector)
       )
       .build()

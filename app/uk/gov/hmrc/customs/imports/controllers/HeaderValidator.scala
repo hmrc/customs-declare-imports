@@ -33,10 +33,10 @@ class HeaderValidator {
     headers.get(XEoriIdentifierHeaderName)
   }
 
-  def validateAndExtractHeaders(implicit h: Headers): Either[ErrorResponse, ValidatedHeadersRequest] = {
+  def validateAndExtractHeaders(implicit headersMap: Map[String, String]): Either[ErrorResponse, ValidatedHeadersRequest] = {
     val result = for{
-      eori <- extractEoriHeader(h.toSimpleMap)
-      lrn <- extractLrnHeader(h.toSimpleMap)
+      eori <- extractEoriHeader(headersMap)
+      lrn <- extractLrnHeader(headersMap)
     } yield ValidatedHeadersRequest(eori, lrn)
     result match {
       case Some(vhr) =>

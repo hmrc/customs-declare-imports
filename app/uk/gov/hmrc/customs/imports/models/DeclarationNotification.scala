@@ -73,31 +73,12 @@ case class DeclarationNotification(
   response: Seq[Response] = Seq.empty
 )
 
-case class NotificationApiHeaders(
-  accept: String,
-  contentType: String,
-  clientId: String,
-  badgeId: Option[String],
-  conversationId: String,
-  eori: String
-)
+//case class NotificationApiHeaders(
+//  accept: String,
+//  contentType: String,
+//  clientId: String,
+//  badgeId: Option[String],
+//  conversationId: String,
+//  eori: String
+//)
 
-case class NotifyResponse(code: String, message: String) {
-  def toXml: Elem = <errorResponse>
-    <code>
-      {code}
-    </code> <message>
-      {message}
-    </message>
-  </errorResponse>
-}
-
-object NotAcceptableResponse extends NotifyResponse("ACCEPT_HEADER_INVALID", "Missing or invalid Accept header")
-
-object HeaderMissingErrorResponse
-    extends NotifyResponse(
-      "INTERNAL_SERVER_ERROR",
-      "ClientId or ConversationId or EORI is missing in the request headers"
-    )
-
-object NotificationFailedErrorResponse extends NotifyResponse("INTERNAL_SERVER_ERROR", "Failed to save notifications")

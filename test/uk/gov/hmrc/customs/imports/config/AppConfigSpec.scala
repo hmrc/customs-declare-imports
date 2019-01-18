@@ -41,5 +41,6 @@ class AppConfigSpec extends CustomsImportsBaseSpec {
     "have customsDeclarationsEndpoint" in {
       config.customsDeclarationsEndpoint must be("http://localhost:6790")
     }
+
   }
 }

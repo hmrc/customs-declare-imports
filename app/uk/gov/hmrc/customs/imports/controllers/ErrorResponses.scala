@@ -87,9 +87,6 @@ case class ErrorResponse(httpStatusCode: Int, errorCode: String, message: String
       NodeSeq.Empty
     }
 
-  def withErrors(contents: ResponseContents*): ErrorResponse = {
-    ErrorResponse(this.httpStatusCode, this.errorCode, this.message, contents :_ *)
-  }
 }
 
 object ErrorResponse extends HttpStatusCodeShortDescriptions {
