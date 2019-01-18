@@ -20,8 +20,6 @@ import java.net.ConnectException
 import java.util.concurrent.TimeoutException
 
 import akka.actor.ActorSystem
-import org.apache.http.HttpException
-import org.junit.rules.ExpectedException
 import play.api.Configuration
 import play.api.http.{ContentTypes, HeaderNames, HttpVerbs, Status}
 import play.api.libs.ws.WSClient
