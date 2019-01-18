@@ -1,11 +1,3 @@
 # microservice specific routes
 
-POST      /submit-declaration                                                   uk.gov.hmrc.customs.imports.controllers.SubmissionController.saveSubmissionResponse()
-
-POST      /customs-declare-imports/notify                                       uk.gov.hmrc.customs.imports.controllers.NotificationsController.saveNotification()
-
-GET       /customs-declare-imports/notifications/:eori                          uk.gov.hmrc.customs.imports.controllers.NotificationsController.getNotifications(eori: String)
-
-GET       /customs-declare-imports/submission-notifications/:conversationId     uk.gov.hmrc.customs.imports.controllers.NotificationsController.getSubmissionNotifications(conversationId: String)
-
-GET       /submissions                                                          uk.gov.hmrc.customs.imports.controllers.SubmissionController.getSubmissionsByEori()
+POST      /declaration                                                          uk.gov.hmrc.customs.imports.controllers.SubmissionController.submitDeclaration()

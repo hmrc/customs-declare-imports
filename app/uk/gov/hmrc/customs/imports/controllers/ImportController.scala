@@ -31,43 +31,31 @@ import scala.concurrent.{ExecutionContext, Future}
 class ImportController @Inject()(override val authConnector: AuthConnector)(implicit ec: ExecutionContext)
     extends BaseController with AuthorisedFunctions {
 
-  def authorizedWithEnrolment[A](
-    callback: Request[A] => Future[Result]
-  )(implicit request: Request[A]): Future[Result] =
-    authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments) { enrolments =>
-      if (hasEnrolment(enrolments))
-        callback(request)
-      else throw InsufficientEnrolments()
-    } recoverWith {
-      handleFailure
-    }
+//  def authorizedWithEnrolment[A](
+//    callback: Request[A] => Future[Result]
+//  )(implicit request: Request[A]): Future[Result] =
+//    authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments) { enrolments =>
+//      if (hasEnrolment(enrolments))
+//        callback(request)
+//      else throw InsufficientEnrolments()
+//    } recoverWith {
+//      handleFailure
+//    }
+//
+//  private def hasEnrolment(allEnrolments: Enrolments): Boolean =
+//    allEnrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber")).isDefined
+//
+//  def handleFailure(implicit request: Request[_]): PartialFunction[Throwable, Future[Result]] =
+//    PartialFunction[Throwable, Future[Result]] {
+//      case _: InsufficientEnrolments =>
+//        Logger.warn(s"Unauthorised access for ${request.uri}")
+//        Future.successful(Unauthorized(Json.toJson("Unauthorized for imports")))
+//      case _: AuthorisationException =>
+//        Logger.warn(s"Unauthorised Exception for ${request.uri}")
+//        Future.successful(Unauthorized(Json.toJson("Unauthorized for imports")))
+//      case ex: Throwable =>
+//        Logger.error("Internal server error is " + ex.getMessage)
+//        Future.successful(InternalServerError(Json.toJson("InternalServerError")))
+//    }
 
-  private def hasEnrolment(allEnrolments: Enrolments): Boolean =
-    allEnrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber")).isDefined
-
-  def handleFailure(implicit request: Request[_]): PartialFunction[Throwable, Future[Result]] =
-    PartialFunction[Throwable, Future[Result]] {
-      case _: InsufficientEnrolments =>
-        Logger.warn(s"Unauthorised access for ${request.uri}")
-        Future.successful(Unauthorized(Json.toJson("Unauthorized for imports")))
-      case _: AuthorisationException =>
-        Logger.warn(s"Unauthorised Exception for ${request.uri}")
-        Future.successful(Unauthorized(Json.toJson("Unauthorized for imports")))
-      case ex: Throwable =>
-        Logger.error("Internal server error is " + ex.getMessage)
-        Future.successful(InternalServerError(Json.toJson("InternalServerError")))
-    }
-
-  def authorizedWithEori[A](
-    callback: AuthorizedRequest[A] => Future[Result]
-  )(implicit request: Request[A]): Future[Result] =
-    authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments) { enrolments =>
-      enrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber"))
-        .fold(throw InsufficientEnrolments()) { eori =>
-                                                callback(AuthorizedRequest(request, eori.value))
-        }
-
-    } recoverWith {
-      handleFailure
-    }
 }

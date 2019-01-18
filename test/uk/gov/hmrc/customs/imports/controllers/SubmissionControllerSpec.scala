@@ -15,64 +15,72 @@
  */
 
 package uk.gov.hmrc.customs.imports.controllers
-
-import play.api.libs.json.{JsValue, Json}
+import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.any
+import org.scalatest.Matchers
+import org.scalatest.mockito.MockitoSugar
+import org.scalatest.time.Seconds
+import play.api.http.ContentTypes
+import play.api.mvc.Codec
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.customs.imports.base.{CustomsImportsBaseSpec, ImportsTestData}
-import uk.gov.hmrc.customs.imports.models.{Submission, SubmissionData, SubmissionResponse}
+import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsResponse
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
-class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestData {
-  val saveUri = "/submit-declaration"
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 
-  val jsonBody: JsValue = Json.toJson[SubmissionResponse](submissionResponse)
+class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestData with MockitoSugar {
+  val saveUri = "/declaration"
 
-  val fakeRequest: FakeRequest[JsValue] = FakeRequest("POST", saveUri).withBody(jsonBody)
+  val xmlBody: String =  randomSubmitDeclaration.toXml
 
-  val submissionJson: JsValue = Json.toJson[Submission](submission)
-  val jsonSeqSubmission: JsValue = Json.toJson[Seq[SubmissionData]](seqSubmissionData)
+  val fakeRequestWithHeaders: FakeRequest[String] = FakeRequest("POST", saveUri)
+    .withBody(xmlBody)
+    .withHeaders(CustomsHeaderNames.XEoriIdentifierHeaderName -> "123dslihuih",
+                 CustomsHeaderNames.XLrnHeaderName -> "ohkjhkjhkjhk",
+      CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
-  "POST /submit-declaration " should {
-    "return 200 when submission has been saved" in {
-      withAuthorizedUser()
-      withDataSaved(true)
-
-      val result = route(app, fakeRequest).value
-
+  "POST /declaration " should {
+      "return 200 when xml request is processed" in {
+        when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
+          .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
+      val result = route(app, fakeRequestWithHeaders).value
       status(result) must be(OK)
     }
 
     "return 500 when something goes wrong" in {
-      withAuthorizedUser()
-      withDataSaved(false)
+      when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
+        .thenReturn(Future.failed(httpException))
 
-      val failedResult = route(app, fakeRequest).value
+      val result = route(app, fakeRequestWithHeaders).value
+      status(result) must be(INTERNAL_SERVER_ERROR)
 
-      status(failedResult) must be(INTERNAL_SERVER_ERROR)
     }
   }
 
 
-  "GET submissions using eori number" should {
-    "return 200 with submission response body" in {
-      withAuthorizedUser()
-      withSubmissions(seqSubmissions)
-      withNotification(None)
-
-      val result = route(app, FakeRequest("GET", "/submissions")).value
-
-      status(result) must be(OK)
-      contentAsJson(result) must be(jsonSeqSubmission)
-    }
-
-    "return 200 without submission response" in {
-      withAuthorizedUser()
-      withSubmissions(Seq.empty)
-      withNotification(None)
-
-      val result = route(app, FakeRequest("GET", "/submissions")).value
-
-      status(result) must be(OK)
-    }
-  }
+//  "GET submissions using eori number" should {
+//    "return 200 with submission response body" in {
+//      withAuthorizedUser()
+//      withSubmissions(seqSubmissions)
+//      withNotification(None)
+//
+//      val result = route(app, FakeRequest("GET", "/submissions")).value
+//
+//      status(result) must be(OK)
+//      contentAsJson(result) must be(jsonSeqSubmission)
+//    }
+//
+//    "return 200 without submission response" in {
+//      withAuthorizedUser()
+//      withSubmissions(Seq.empty)
+//      withNotification(None)
+//
+//      val result = route(app, FakeRequest("GET", "/submissions")).value
+//
+//      status(result) must be(OK)
+//    }
+//  }
 }
