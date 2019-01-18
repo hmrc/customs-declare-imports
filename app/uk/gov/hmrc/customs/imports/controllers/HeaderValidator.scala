@@ -17,7 +17,6 @@
 package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.Singleton
-import play.api.mvc.Headers
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames.{XEoriIdentifierHeaderName, XLrnHeaderName}
 
 

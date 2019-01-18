@@ -15,20 +15,17 @@
  */
 
 package uk.gov.hmrc.customs.imports.controllers
-import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers.any
-import org.scalatest.Matchers
+import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.time.Seconds
 import play.api.http.ContentTypes
 import play.api.mvc.Codec
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.customs.imports.base.{CustomsImportsBaseSpec, ImportsTestData}
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsResponse
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
 class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestData with MockitoSugar {
@@ -36,17 +33,29 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
   val xmlBody: String =  randomSubmitDeclaration.toXml
 
-  val fakeRequestWithHeaders: FakeRequest[String] = FakeRequest("POST", saveUri)
+  val fakeXmlRequest: FakeRequest[String] = FakeRequest("POST", saveUri)
     .withBody(xmlBody)
+
+  val fakeXmlRequestWithHeaders: FakeRequest[String] = fakeXmlRequest
     .withHeaders(CustomsHeaderNames.XEoriIdentifierHeaderName -> "123dslihuih",
-                 CustomsHeaderNames.XLrnHeaderName -> "ohkjhkjhkjhk",
+      CustomsHeaderNames.XLrnHeaderName -> "ohkjhkjhkjhk",
       CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
+
+  val fakeNonXmlRequestWithHeaders: FakeRequest[String] = FakeRequest("POST", saveUri)
+    .withBody("SOMEUNKNOWNTEXTNOTXML")
+    .withHeaders(CustomsHeaderNames.XEoriIdentifierHeaderName -> "123dslihuih",
+      CustomsHeaderNames.XLrnHeaderName -> "ohkjhkjhkjhk",
+      CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
+
+
+
   "POST /declaration " should {
+
       "return 200 when xml request is processed" in {
         when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
           .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
-      val result = route(app, fakeRequestWithHeaders).value
+      val result = route(app, fakeXmlRequestWithHeaders).value
       status(result) must be(OK)
     }
 
@@ -54,7 +63,25 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
         .thenReturn(Future.failed(httpException))
 
-      val result = route(app, fakeRequestWithHeaders).value
+      val result = route(app, fakeXmlRequestWithHeaders).value
+      status(result) must be(INTERNAL_SERVER_ERROR)
+
+    }
+
+    "return 400 when nonXMl is sent" in {
+      when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
+        .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
+
+      val result = route(app, fakeNonXmlRequestWithHeaders).value
+      status(result) must be(BAD_REQUEST)
+
+    }
+
+    "return 500 when headers not present" in {
+      when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
+        .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
+
+      val result = route(app, fakeXmlRequest).value
       status(result) must be(INTERNAL_SERVER_ERROR)
 
     }

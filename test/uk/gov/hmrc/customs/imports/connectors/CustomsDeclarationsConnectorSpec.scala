@@ -20,6 +20,8 @@ import java.net.ConnectException
 import java.util.concurrent.TimeoutException
 
 import akka.actor.ActorSystem
+import org.apache.http.HttpException
+import org.junit.rules.ExpectedException
 import play.api.Configuration
 import play.api.http.{ContentTypes, HeaderNames, HttpVerbs, Status}
 import play.api.libs.ws.WSClient
@@ -56,9 +58,17 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
 
   val aRandomSubmitDeclaration: MetaData = randomSubmitDeclaration
 
-  def acceptedResponse(conversationId: String) = HttpResponse(
-    responseStatus = Status.ACCEPTED,
-    responseHeaders = Map(XConversationIdName -> Seq(conversationId))
+  def acceptedResponse(maybeConversationId: Option[String]) = {
+    val headers = maybeConversationId.fold(Map(""->Seq(""))){conversationId =>
+      Map(XConversationIdName -> Seq(conversationId))}
+    HttpResponse(
+      responseStatus = Status.ACCEPTED,
+      responseHeaders = headers
+    )
+  }
+
+  def acceptedResponseNoConversationId(conversationId: String) = HttpResponse(
+    responseStatus = Status.ACCEPTED
   )
 
   def otherResponse(status: Int) = HttpResponse(responseStatus = status)
@@ -67,7 +77,12 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
 
   def expectingAcceptedResponse(request: HttpRequest): Either[Exception, HttpExpectation] = Right(HttpExpectation(
     request,
-    acceptedResponse(randomConversationId)
+    acceptedResponse(Some(randomConversationId))
+  ))
+
+  def expectingAcceptedResponseNoConversationId(request: HttpRequest): Either[Exception, HttpExpectation] = Right(HttpExpectation(
+    request,
+    acceptedResponse(None)
   ))
 
   def expectingOtherResponse(request: HttpRequest, status: Int, headers: Map[String, String]): Either[Exception, HttpExpectation] = Right(HttpExpectation(
@@ -78,6 +93,7 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
   def expectingFailure(ex: Exception): Either[Exception, HttpExpectation] = Left(ex)
 
   // the actual test scenarios
+
 
   "submit import declaration" should {
 
@@ -135,45 +151,61 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
     }
 
     "throw upstream 5xx exception when API responds with internal server error" in {
-      withHttpClient(expectingOtherResponse(submitRequest(aRandomSubmitDeclaration.toXml, ValidAPIResponseHeaders), Status.INTERNAL_SERVER_ERROR, ValidHeaders)) { http =>
-        withSubmissionRepository() { repo =>
-          withCustomsDeclarationsConnector(http, repo) { connector =>
-            val ex = connector.submitImportDeclaration(declarantEoriValue, aRandomSubmitDeclaration.toXml).failed.futureValue.asInstanceOf[Upstream5xxResponse]
-            ex.upstreamResponseCode must be(Status.INTERNAL_SERVER_ERROR)
-            ex.reportAs must be(Status.INTERNAL_SERVER_ERROR)
-          }
-        }
-      }
+      simple5xxFailureSubmissionScenario(Status.INTERNAL_SERVER_ERROR, Status.INTERNAL_SERVER_ERROR)
     }
 
     "throw upstream 4xx exception when API responds with bad request" in {
-      withHttpClient(expectingOtherResponse(submitRequest(aRandomSubmitDeclaration.toXml, ValidAPIResponseHeaders), Status.BAD_REQUEST, ValidHeaders)) { http =>
-        withSubmissionRepository() { repo =>
-          withCustomsDeclarationsConnector(http, repo) { connector =>
-            val ex = connector.submitImportDeclaration(declarantEoriValue, aRandomSubmitDeclaration.toXml).failed.futureValue.asInstanceOf[Upstream4xxResponse]
-            ex.upstreamResponseCode must be(Status.BAD_REQUEST)
-            ex.reportAs must be(Status.INTERNAL_SERVER_ERROR)
-          }
-        }
-      }
+      simple4xxFailureSubmissionScenario(Status.BAD_REQUEST, Status.INTERNAL_SERVER_ERROR)
     }
 
     "throw upstream 4xx exception when API responds with unauthhorised" in {
-      withHttpClient(expectingOtherResponse(submitRequest(aRandomSubmitDeclaration.toXml, ValidAPIResponseHeaders), Status.UNAUTHORIZED, ValidHeaders)) { http =>
-        withSubmissionRepository() { repo =>
-          withCustomsDeclarationsConnector(http, repo) { connector =>
-            val ex = connector.submitImportDeclaration(declarantEoriValue,  aRandomSubmitDeclaration.toXml).failed.futureValue.asInstanceOf[Upstream4xxResponse]
-            ex.upstreamResponseCode must be(Status.UNAUTHORIZED)
-            ex.reportAs must be(Status.INTERNAL_SERVER_ERROR)
-          }
-        }
-      }
+      simple4xxFailureSubmissionScenario(Status.UNAUTHORIZED, Status.INTERNAL_SERVER_ERROR)
+    }
+
+    "throw upstream 5xx exception when API responds with no conversationId" in {
+      simpleNoConversatioIdFailureSubmissionScenario(Status.ACCEPTED, Status.INTERNAL_SERVER_ERROR)
     }
 
   }
 
+  def simpleNoConversatioIdFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: Int) = {
+    withHttpClient(expectingAcceptedResponseNoConversationId(submitRequest(aRandomSubmitDeclaration.toXml, ValidAPIResponseHeaders))) { http =>
+      withSubmissionRepository() { repo =>
+        withCustomsDeclarationsConnector(http, repo) { connector =>
+          val ex = connector.submitImportDeclaration(declarantEoriValue,  aRandomSubmitDeclaration.toXml).
+            failed.futureValue.asInstanceOf[Upstream5xxResponse]
+          ex.upstreamResponseCode must be(expectedStatus)
+          ex.reportAs must be(expectedEndStatus)
+        }
+      }
+    }
+  }
 
+def simple4xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: Int) = {
+  withHttpClient(expectingOtherResponse(submitRequest(aRandomSubmitDeclaration.toXml, ValidAPIResponseHeaders), expectedStatus, ValidHeaders)) { http =>
+    withSubmissionRepository() { repo =>
+      withCustomsDeclarationsConnector(http, repo) { connector =>
+        val ex = connector.submitImportDeclaration(declarantEoriValue,  aRandomSubmitDeclaration.toXml).
+          failed.futureValue.asInstanceOf[Upstream4xxResponse]
+        ex.upstreamResponseCode must be(expectedStatus)
+        ex.reportAs must be(expectedEndStatus)
+      }
+    }
+  }
+}
 
+  def simple5xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: Int) = {
+    withHttpClient(expectingOtherResponse(submitRequest(aRandomSubmitDeclaration.toXml, ValidAPIResponseHeaders), expectedStatus, ValidHeaders)) { http =>
+      withSubmissionRepository() { repo =>
+        withCustomsDeclarationsConnector(http, repo) { connector =>
+          val ex = connector.submitImportDeclaration(declarantEoriValue,  aRandomSubmitDeclaration.toXml).
+            failed.futureValue.asInstanceOf[Upstream5xxResponse]
+          ex.upstreamResponseCode must be(expectedStatus)
+          ex.reportAs must be(expectedEndStatus)
+        }
+      }
+    }
+  }
   // the test scenario builders
 
   def simpleAcceptedSubmissionScenario(eori: String, lrn: String, xmlPayload : String)

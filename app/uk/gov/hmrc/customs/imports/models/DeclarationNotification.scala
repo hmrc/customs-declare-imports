@@ -20,7 +20,6 @@ import org.joda.time.DateTime
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.wco.dec._
 
-import scala.xml.Elem
 
 case class DeclarationMetadata(
   wcoDataModelVersionCode: Option[String] = None, // max 6 chars
