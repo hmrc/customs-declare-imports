@@ -50,7 +50,7 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
 
   // some basic fixtures and helpers
 
-  val submitUrl: String = s"${appConfig.customsDeclarationsEndpoint}${appConfig.submitImportDeclarationUri}"
+  val submitUrl: String = s"${appConfig.customsDeclarationsHostName}${appConfig.submitImportDeclarationUri}"
 
   val acceptContentType: String = s"application/vnd.hmrc.${appConfig.customsDeclarationsApiVersion}+xml"
 

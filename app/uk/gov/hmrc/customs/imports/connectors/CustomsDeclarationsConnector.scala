@@ -77,7 +77,7 @@ class CustomsDeclarationsConnector @Inject()(appConfig: AppConfig,
   private def doPost(uri: String, body: String, eori: String)
                     (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =
     httpClient.POSTString[CustomsDeclarationsResponse](
-      url = s"${appConfig.customsDeclarationsEndpoint}$uri",
+      url = s"${appConfig.customsDeclarationsHostName}$uri",
       body = body,
       headers = headers(eori)
     )(responseReader, hc, ec)
