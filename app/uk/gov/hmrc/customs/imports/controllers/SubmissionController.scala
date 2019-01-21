@@ -18,10 +18,12 @@ package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.customs.imports.config.AppConfig
-import uk.gov.hmrc.customs.imports.connectors.{CustomsDeclarationsConnector, CustomsDeclarationsResponse}
+import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
+import uk.gov.hmrc.customs.imports.models.{ImportsResponse, Submission}
 import uk.gov.hmrc.customs.imports.repositories.{NotificationsRepository, SubmissionRepository}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -60,11 +62,8 @@ class SubmissionController @Inject()(
         case Right(vhr) =>
           request.body.asXml match {
                case Some(xml) =>
-                 handleDeclarationSubmit(vhr.eori, vhr.lrn, xml).map {
-                   resp =>  Logger.debug(s"conversationId: ${resp.conversationId}")
-                     Ok
-                 }.recoverWith {
-                   case e: Exception =>
+                 handleDeclarationSubmit(vhr.eori, vhr.lrn, xml).recoverWith {
+                   case _ : Exception =>
                      Logger.error("problem calling declaration api")
                      Future.successful(ErrorResponse.ErrorInternalServerError.XmlResult)
                  }
@@ -79,20 +78,22 @@ class SubmissionController @Inject()(
 
   }
 
-  def handleDeclarationSubmit(eori: String, lrn: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[CustomsDeclarationsResponse] = {
-    customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString())
-    ////    submissionRepository
-    ////      .save(Submission(body.eori, body.conversationId, body.lrn, body.mrn))
-    ////      .map(
-    ////        res =>
-    ////          if (res) {
-    ////            Logger.debug("submission data saved to DB")
-    ////            Ok(Json.toJson(ImportsResponse(OK, "Submission response saved")))
-    ////          } else {
-    ////            Logger.error("error  saving submission data to DB")
-    ////            InternalServerError("failed saving submission")
-    ////        }
-    ////      )
+  def handleDeclarationSubmit(eori: String, lrn: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Result] = {
+    customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString()).flatMap({ response =>
+      Logger.debug(s"conversationId: ${response.conversationId}")
+      submissionRepository
+        .save(Submission(eori, response.conversationId, lrn, None))
+        .map({ res =>
+          if (res) {
+            Logger.debug("submission data saved to DB")
+            Ok(Json.toJson(ImportsResponse(OK, "Submission response saved")))
+          } else {
+            Logger.error("error saving submission data to DB")
+            ErrorResponse.ErrorInternalServerError.XmlResult
+          }
+        })
+    })
+
   }
 
 
