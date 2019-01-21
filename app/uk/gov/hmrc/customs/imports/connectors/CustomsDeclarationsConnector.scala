@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.customs.imports.connectors
 
-import com.google.inject.{ImplementedBy, Inject}
+import com.google.inject.Inject
 import javax.inject.Singleton
 import play.api.http.{ContentTypes, HeaderNames, Status}
 import play.api.mvc.Codec
@@ -77,7 +77,7 @@ class CustomsDeclarationsConnector @Inject()(appConfig: AppConfig,
   private def doPost(uri: String, body: String, eori: String)
                     (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =
     httpClient.POSTString[CustomsDeclarationsResponse](
-      url = s"${appConfig.customsDeclarationsHostName}$uri",
+      url = s"${appConfig.customsDeclarationsHostName}:${appConfig.customsDeclarationsPort}$uri",
       body = body,
       headers = headers(eori)
     )(responseReader, hc, ec)

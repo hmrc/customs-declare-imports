@@ -34,7 +34,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
   val xmlBody: String =  randomSubmitDeclaration.toXml
 
   val fakeXmlRequest: FakeRequest[String] = FakeRequest("POST", saveUri)
-    .withBody(xmlBody)
+    .withBody(xmlBody).withHeaders(CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
   val fakeXmlRequestWithHeaders: FakeRequest[String] = fakeXmlRequest
     .withHeaders(CustomsHeaderNames.XEoriIdentifierHeaderName -> "123dslihuih",
@@ -87,27 +87,4 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
     }
   }
 
-
-//  "GET submissions using eori number" should {
-//    "return 200 with submission response body" in {
-//      withAuthorizedUser()
-//      withSubmissions(seqSubmissions)
-//      withNotification(None)
-//
-//      val result = route(app, FakeRequest("GET", "/submissions")).value
-//
-//      status(result) must be(OK)
-//      contentAsJson(result) must be(jsonSeqSubmission)
-//    }
-//
-//    "return 200 without submission response" in {
-//      withAuthorizedUser()
-//      withSubmissions(Seq.empty)
-//      withNotification(None)
-//
-//      val result = route(app, FakeRequest("GET", "/submissions")).value
-//
-//      status(result) must be(OK)
-//    }
-//  }
 }
