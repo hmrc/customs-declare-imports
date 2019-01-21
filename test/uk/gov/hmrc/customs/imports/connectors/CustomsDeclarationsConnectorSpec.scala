@@ -50,7 +50,7 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
 
   // some basic fixtures and helpers
 
-  val submitUrl: String = s"${appConfig.customsDeclarationsHostName}${appConfig.submitImportDeclarationUri}"
+  val submitUrl: String = s"${appConfig.customsDeclarationsHostName}:${appConfig.customsDeclarationsPort}${appConfig.submitImportDeclarationUri}"
 
   val acceptContentType: String = s"application/vnd.hmrc.${appConfig.customsDeclarationsApiVersion}+xml"
 
@@ -260,7 +260,8 @@ case class HttpExpectation(req: uk.gov.hmrc.customs.imports.utils.HttpRequest, r
 
 
 
-class MockHttpClient(throwOrRespond: Either[Exception, HttpExpectation], config: Configuration, auditConnector: AuditConnector, wsClient: WSClient, actorSystem: ActorSystem) extends DefaultHttpClient(config, auditConnector, wsClient, actorSystem = actorSystem) {
+class MockHttpClient(throwOrRespond: Either[Exception, HttpExpectation], config: Configuration, auditConnector: AuditConnector, wsClient: WSClient, actorSystem: ActorSystem)
+  extends DefaultHttpClient(config, auditConnector, wsClient, actorSystem = actorSystem) {
 
   val requests: mutable.Buffer[uk.gov.hmrc.customs.imports.utils.HttpRequest] = mutable.Buffer.empty
 
@@ -271,7 +272,7 @@ class MockHttpClient(throwOrRespond: Either[Exception, HttpExpectation], config:
     throwOrRespond.fold(
       ex => Future.failed(ex),
       respond =>
-        if (url == respond.req.url && body == respond.req.body) Future.successful(respond.resp)
+        if (url.equalsIgnoreCase(respond.req.url) && body == respond.req.body) Future.successful(respond.resp)
         else super.doPostString(url, body, headers)
     )
   }
