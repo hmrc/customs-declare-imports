@@ -40,7 +40,7 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
   override def indexes: Seq[Index] = Seq(
     Index(Seq("eori" -> IndexType.Ascending), name = Some("eoriIdx")),
     Index(Seq("conversationId" -> IndexType.Ascending), unique = true, name = Some("conversationIdIdx")),
-    Index(Seq("mrn" -> IndexType.Ascending), unique = true, name = Some("mrnIdx"))
+    Index(Seq("lrn" -> IndexType.Ascending), name = Some("lrnIdx"))
   )
 
   def findByEori(eori: String): Future[Seq[Submission]] = find("eori" -> JsString(eori))

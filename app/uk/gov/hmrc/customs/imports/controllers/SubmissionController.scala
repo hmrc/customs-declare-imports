@@ -63,8 +63,8 @@ class SubmissionController @Inject()(
           request.body.asXml match {
                case Some(xml) =>
                  handleDeclarationSubmit(vhr.eori, vhr.lrn, xml).recoverWith {
-                   case _ : Exception =>
-                     Logger.error("problem calling declaration api")
+                   case e : Exception =>
+                     Logger.error(s"problem calling declaration api ${e.getMessage}")
                      Future.successful(ErrorResponse.ErrorInternalServerError.XmlResult)
                  }
                case None =>
