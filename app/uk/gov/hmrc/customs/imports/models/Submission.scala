@@ -16,20 +16,20 @@
 
 package uk.gov.hmrc.customs.imports.models
 
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.mongoEntity
 
+
+
 case class Submission(
   eori: String,
   conversationId: String,
-  ducr: String,
-  lrn: Option[String] = None,
+  lrn: String,
   mrn: Option[String] = None,
   submittedTimestamp: Long = System.currentTimeMillis(),
-  id: BSONObjectID = BSONObjectID.generate(),
-  status: Option[String] = Some("Pending")
+  id: BSONObjectID = BSONObjectID.generate()
 )
 
 object Submission {
@@ -42,12 +42,9 @@ object Submission {
 case class SubmissionData(
   eori: String,
   conversationId: String,
-  ducr: String,
-  lrn: Option[String],
+  lrn: String,
   mrn: Option[String],
-  submittedTimestamp: Long,
-  status: String,
-  noOfNotifications: Int
+  submittedTimestamp: Long
 )
 
 object SubmissionData {
@@ -57,23 +54,20 @@ object SubmissionData {
     SubmissionData(
       eori = submission.eori,
       conversationId = submission.conversationId,
-      ducr = submission.ducr,
       lrn = submission.lrn,
       mrn = submission.mrn,
-      submittedTimestamp = submission.submittedTimestamp,
-      status = submission.status.getOrElse(""),
-      noOfNotifications = noOfNotifications
+      submittedTimestamp = submission.submittedTimestamp
     )
 }
 
-case class SubmissionResponse(eori: String, conversationId: String, ducr: String, lrn: Option[String] = None, mrn: Option[String] = None)
+case class SubmitDeclarationResponse(eori: String, conversationId: String, ducr: String, lrn: Option[String] = None, mrn: Option[String] = None)
 
-object SubmissionResponse {
-  implicit val formats: OFormat[SubmissionResponse] = Json.format[SubmissionResponse]
+object SubmitDeclarationResponse {
+  implicit val formats: OFormat[SubmitDeclarationResponse] = Json.format[SubmitDeclarationResponse]
 }
 
-case class ExportsResponse(status: Int, message: String)
+case class ImportsResponse(status: Int, message: String)
 
-object ExportsResponse {
-  implicit val formats: OFormat[ExportsResponse] = Json.format[ExportsResponse]
+object ImportsResponse {
+  implicit val formats: OFormat[ImportsResponse] = Json.format[ImportsResponse]
 }

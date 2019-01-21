@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.models
+package uk.gov.hmrc.customs.imports.controllers
 
-import play.api.mvc.{Request, WrappedRequest}
+object CustomsHeaderNames {
+  val Authorization = "Authorization"
+  val XEoriIdentifierHeaderName = "X-EORI-Identifier"
+  val XLrnHeaderName = "X-Local-Reference-Number"
+  val XClientIdName = "X-Client-ID"
+  val XConversationIdName = "X-Conversation-ID"
 
-case class AuthorizedRequest[A](request: Request[A]) extends WrappedRequest[A](request)
+}

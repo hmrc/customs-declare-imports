@@ -21,45 +21,30 @@ import javax.inject.Singleton
 import play.api.http.{ContentTypes, HeaderNames, Status}
 import play.api.mvc.Codec
 import uk.gov.hmrc.customs.imports.config.AppConfig
-import uk.gov.hmrc.customs.imports.models.{SignedInUser, Submission}
+import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
+
 import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.wco.dec.MetaData
+
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@ImplementedBy(classOf[CustomsDeclarationsConnectorImpl])
-trait CustomsDeclarationsConnector {
-
-  def submitImportDeclaration(metaData: MetaData, badgeIdentifier: Option[String] = None)
-                             (implicit hc: HeaderCarrier, ec: ExecutionContext, user: SignedInUser): Future[CustomsDeclarationsResponse]
-
-  def cancelImportDeclaration(metaData: MetaData, badgeIdentifier: Option[String] = None)
-                             (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse]
-
-}
-
 @Singleton
-class CustomsDeclarationsConnectorImpl @Inject()(appConfig: AppConfig,
-                                                 httpClient: HttpClient,
-                                                 submissionRepository: SubmissionRepository)
-  extends CustomsDeclarationsConnector {
+class CustomsDeclarationsConnector @Inject()(appConfig: AppConfig,
+                                             httpClient: HttpClient,
+                                             submissionRepository: SubmissionRepository) {
 
-  override def submitImportDeclaration(metaData: MetaData, badgeIdentifier: Option[String] = None)
-                                      (implicit hc: HeaderCarrier, ec: ExecutionContext, user: SignedInUser): Future[CustomsDeclarationsResponse] =
-    postMetaData(appConfig.submitImportDeclarationUri, metaData, badgeIdentifier, onSuccessfulSubmission)
-
-  override def cancelImportDeclaration(metaData: MetaData, badgeIdentifier: Option[String] = None)
+  def submitImportDeclaration(eori: String, xmlPayload: String)
                                       (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =
-    postMetaData(appConfig.cancelImportDeclarationUri, metaData, badgeIdentifier)
+    postMetaData(appConfig.submitImportDeclarationUri, xmlPayload, eori)
 
   private def postMetaData(uri: String,
-                           metaData: MetaData,
-                           badgeIdentifier: Option[String] = None,
-                           onSuccess: (MetaData, CustomsDeclarationsResponse) => Future[CustomsDeclarationsResponse] = onSuccess)
+                           xmlPayload: String,
+                           eori: String,
+                           onSuccess: CustomsDeclarationsResponse => Future[CustomsDeclarationsResponse] = onSuccess)
                           (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =
-    doPost(uri, metaData.toXml, badgeIdentifier).flatMap(onSuccess(metaData, _))
+    doPost(uri, xmlPayload, eori).flatMap(onSuccess(_))
 
   //noinspection ConvertExpressionToSAM
   private implicit val responseReader: HttpReads[CustomsDeclarationsResponse] = new HttpReads[CustomsDeclarationsResponse] {
@@ -87,32 +72,22 @@ class CustomsDeclarationsConnectorImpl @Inject()(appConfig: AppConfig,
     }
   }
 
-  private def onSuccess(meta: MetaData, resp: CustomsDeclarationsResponse): Future[CustomsDeclarationsResponse] = Future.successful(resp)
+  private def onSuccess(resp: CustomsDeclarationsResponse): Future[CustomsDeclarationsResponse] = Future.successful(resp)
 
-  private def onSuccessfulSubmission(meta: MetaData, resp: CustomsDeclarationsResponse)
-                                    (implicit ec: ExecutionContext, user: SignedInUser): Future[CustomsDeclarationsResponse] =
-  //TODO - Sort out this horrible double blind get in the metedata model and fix eori
-    submissionRepository.insert(
-      Submission(
-        eori = user.eori.getOrElse(""),
-        conversationId = resp.conversationId,
-        meta.declaration.get.functionalReferenceId.get
-      )
-    ).map(_ => resp)
-
-  private def doPost(uri: String, body: String, badgeIdentifier: Option[String] = None)
+  private def doPost(uri: String, body: String, eori: String)
                     (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =
     httpClient.POSTString[CustomsDeclarationsResponse](
-      url = s"${appConfig.customsDeclarationsEndpoint}$uri",
+      url = s"${appConfig.customsDeclarationsHostName}$uri",
       body = body,
-      headers = headers(badgeIdentifier)
+      headers = headers(eori)
     )(responseReader, hc, ec)
 
-  private def headers(badgeIdentifier: Option[String]): Seq[(String, String)] = Seq(
+  private def headers(eori: String): Seq[(String, String)] = Seq(
     "X-Client-ID" -> appConfig.developerHubClientId,
     HeaderNames.ACCEPT -> s"application/vnd.hmrc.${appConfig.customsDeclarationsApiVersion}+xml",
-    HeaderNames.CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8)
-  ) ++ badgeIdentifier.map(id => "X-Badge-Identifier" -> id)
+    HeaderNames.CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8),
+    CustomsHeaderNames.XEoriIdentifierHeaderName -> eori
+  )
 
 }
 

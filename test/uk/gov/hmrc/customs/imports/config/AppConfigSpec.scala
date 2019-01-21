@@ -16,30 +16,57 @@
 
 package uk.gov.hmrc.customs.imports.config
 
-import uk.gov.hmrc.customs.imports.base.CustomsImportsBaseSpec
+import com.typesafe.config.{Config, ConfigFactory}
+import org.scalatest.mockito.MockitoSugar
+import play.api.{Configuration, Environment, Mode}
+import uk.gov.hmrc.play.test.UnitSpec
 
-class AppConfigSpec extends CustomsImportsBaseSpec {
-  val config: AppConfig = app.injector.instanceOf[AppConfig]
+class AppConfigSpec extends UnitSpec with MockitoSugar {
+  private val validAppConfig: Config = ConfigFactory.parseString(
+    """
+      |microservice.services.customs-declarations.host=remotedec-api
+      |microservice.services.customs-declarations.port=6000
+      |microservice.services.customs-declarations.api-version=1.0
+      |microservice.services.customs-declarations.submit-uri=/declarations
+    """.stripMargin)
 
-  "The config" should {
-    "have auth url" in {
-      config.authUrl must be("http://localhost:8500")
+  private val emptyAppConfig: Config = ConfigFactory.parseString("")
+
+  private val validServicesConfiguration = Configuration(validAppConfig)
+  private val emptyServicesConfiguration = Configuration(emptyAppConfig)
+
+
+  private def customsConfigService(conf: Configuration) =
+    new AppConfig(runModeConfiguration = conf,  mock[Environment]) {
+      override val mode: Mode.Value = play.api.Mode.Test
     }
 
-    "have login url" in {
-      config.loginUrl must be("http://localhost:9949/auth-login-stub/gg-sign-in")
+  "AppConfig" should {
+    "return config as object model when configuration is valid" in {
+      val configService: AppConfig = customsConfigService(validServicesConfiguration)
+
+      configService.customsDeclarationsApiVersion shouldBe "1.0"
+      configService.submitImportDeclarationUri shouldBe "/declarations"
+      configService.customsDeclarationsHostName shouldBe "remotedec-api"
+      configService.customsDeclarationsPort shouldBe "6000"
     }
 
-    "have cancelImportDeclarationUri" in {
-      config.cancelImportDeclarationUri must be("/cancellation-requests")
-    }
 
-    "have customsDeclarationsApiVersion" in {
-      config.customsDeclarationsApiVersion must be("1.0")
-    }
+    "throw an exception when configuration is invalid" in {
+      val configService: AppConfig = customsConfigService(emptyServicesConfiguration)
 
-    "have customsDeclarationsEndpoint" in {
-      config.customsDeclarationsEndpoint must be("http://localhost:6790")
+      val caught1: IllegalStateException = intercept[IllegalStateException](configService.customsDeclarationsHostName)
+      caught1.getMessage shouldBe "Missing configuration for Customs Declarations HostName"
+
+      val caught2: IllegalStateException = intercept[IllegalStateException](configService.customsDeclarationsPort)
+      caught2.getMessage shouldBe "Missing configuration for Customs Declarations Port"
+
+      val caught3: IllegalStateException = intercept[IllegalStateException](configService.customsDeclarationsApiVersion)
+      caught3.getMessage shouldBe "Missing configuration for Customs Declarations API version"
+
+      val caught4: IllegalStateException = intercept[IllegalStateException](configService.submitImportDeclarationUri)
+      caught4.getMessage shouldBe "Missing configuration for Customs Declarations submission URI"
     }
   }
+
 }

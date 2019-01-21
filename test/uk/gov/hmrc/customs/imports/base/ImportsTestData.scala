@@ -19,8 +19,13 @@ package uk.gov.hmrc.customs.imports.base
 import java.util.UUID
 
 import org.joda.time.DateTime
+import play.api.http.ContentTypes
+import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE}
+import play.api.mvc.Codec
+import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames.{XClientIdName, XEoriIdentifierHeaderName, XLrnHeaderName}
 import uk.gov.hmrc.customs.imports.models._
-import uk.gov.hmrc.wco.dec.Response
+import uk.gov.hmrc.http.NotFoundException
+import uk.gov.hmrc.wco.dec.{Declaration, MetaData, Response}
 
 import scala.util.Random
 
@@ -34,13 +39,13 @@ trait ImportsTestData {
   val EIGHT = 8
   val SEVENTY = 70
   val eori: String = randomString(EIGHT)
-  val lrn: Option[String] = Some(randomString(SEVENTY))
+  val lrn: String = randomString(SEVENTY)
   val mrn: String = randomString(SIXTEEN)
   val conversationId: String = UUID.randomUUID.toString
   val ducr: String = randomString(SIXTEEN)
 
   val before: Long = System.currentTimeMillis()
-  val submission = Submission(eori, conversationId, ducr, lrn, Some(mrn))
+  val submission = Submission(eori, conversationId, lrn, Some(mrn))
   val submissionData: SubmissionData = SubmissionData.buildSubmissionData(submission, 0)
   val seqSubmissions: Seq[Submission] = Seq(submission)
   val seqSubmissionData: Seq[SubmissionData] = Seq(submissionData)
@@ -51,7 +56,37 @@ trait ImportsTestData {
 
   val notification = DeclarationNotification(now, conversationId, eori, None, DeclarationMetadata(), response1)
 
-  val submissionResponse = SubmissionResponse(eori, conversationId, ducr, lrn, Some(mrn))
+  val submissionResponse = SubmitDeclarationResponse(eori, conversationId, lrn, Some(mrn))
+
+  val declarantEoriValue: String = "ZZ123456789000"
+  val declarantLrnValue: String = "MyLrnValue1234"
+  val devclientId = "123786"
+  val declarationApiVersion ="1.0"
+  val Valid_X_EORI_IDENTIFIER_HEADER: (String, String) = XEoriIdentifierHeaderName -> declarantEoriValue
+  val Valid_LRN_HEADER: (String, String) = XLrnHeaderName -> declarantLrnValue
+  val XClientIdHeader: (String, String) = XClientIdName -> devclientId
+  val acceptHeader: (String, String) = ACCEPT -> s"application/vnd.hmrc.$declarationApiVersion+xml"
+  val contentTypeHeader: (String, String) = CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8)
+  val httpException = new NotFoundException("Emulated 404 response from a web call")
+
+  val ValidHeaders: Map[String, String] = Map(
+    contentTypeHeader,
+    Valid_X_EORI_IDENTIFIER_HEADER,
+    Valid_LRN_HEADER
+  )
+
+  val ValidAPIResponseHeaders: Map[String, String] = Map(
+    XClientIdHeader,
+    acceptHeader,
+    contentTypeHeader,
+    Valid_X_EORI_IDENTIFIER_HEADER
+  )
+
+  def randomSubmitDeclaration: MetaData = MetaData(declaration = Option(Declaration(
+    functionalReferenceId = Some(randomString(35))
+  )))
+
+  def randomConversationId: String = UUID.randomUUID().toString
 
   protected def randomString(length: Int): String = Random.alphanumeric.take(length).mkString
 }

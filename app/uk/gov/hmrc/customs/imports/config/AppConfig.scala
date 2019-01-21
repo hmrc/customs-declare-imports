@@ -29,15 +29,17 @@ class AppConfig @Inject()(override val runModeConfiguration: Configuration, val 
 
   override protected def appNameConfiguration: Configuration = runModeConfiguration
 
-  private def loadConfig(key: String): String =
-    runModeConfiguration.getString(key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
+  lazy val customsDeclarationsHostName: String =
+    getConfString("customs-declarations.host", throw new IllegalStateException("Missing configuration for Customs Declarations HostName"))
 
-  lazy val authUrl: String = baseUrl("auth")
-  lazy val loginUrl: String = loadConfig("urls.login")
+  lazy val customsDeclarationsPort: String =
+    getConfString("customs-declarations.port", throw new IllegalStateException("Missing configuration for Customs Declarations Port"))
 
-  lazy val customsDeclarationsEndpoint: String = baseUrl("customs-declarations")
-  lazy val customsDeclarationsApiVersion: String = getConfString("customs-declarations.api-version", throw new IllegalStateException("Missing configuration for Customs Declarations API version"))
-  lazy val cancelImportDeclarationUri: String = getConfString("customs-declarations.cancel-uri", throw new IllegalStateException("Missing configuration for Customs Declarations cancel URI"))
-  lazy val submitImportDeclarationUri: String = getConfString("customs-declarations.submit-uri", throw new IllegalStateException("Missing configuration for Customs Declarations submission URI"))
+  lazy val customsDeclarationsApiVersion: String =
+    getConfString("customs-declarations.api-version", throw new IllegalStateException("Missing configuration for Customs Declarations API version"))
+
+  lazy val submitImportDeclarationUri: String =
+    getConfString("customs-declarations.submit-uri", throw new IllegalStateException("Missing configuration for Customs Declarations submission URI"))
+
   lazy val developerHubClientId: String = appName
 }

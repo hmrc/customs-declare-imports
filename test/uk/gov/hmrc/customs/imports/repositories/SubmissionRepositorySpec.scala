@@ -62,13 +62,11 @@ class SubmissionRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfte
       // update status test
       val submissionToUpdate = repo.getByConversationId(conversationId).futureValue.value
 
-      val updatedSubmission = submissionToUpdate.copy(status = Some("Accepted"))
-
-      repo.updateSubmission(updatedSubmission).futureValue must be(true)
+      repo.updateSubmission(submissionToUpdate).futureValue must be(true)
 
       val newSubmission = repo.getByConversationId(conversationId).futureValue.value
 
-      newSubmission must be(updatedSubmission)
+      newSubmission must be(submissionToUpdate)
     }
   }
 }

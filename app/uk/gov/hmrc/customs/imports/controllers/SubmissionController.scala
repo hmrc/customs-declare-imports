@@ -18,76 +18,86 @@ package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Request, Result}
+import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.customs.imports.config.AppConfig
-import uk.gov.hmrc.customs.imports.models._
+import uk.gov.hmrc.customs.imports.connectors.{CustomsDeclarationsConnector, CustomsDeclarationsResponse}
 import uk.gov.hmrc.customs.imports.repositories.{NotificationsRepository, SubmissionRepository}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.xml.NodeSeq
 
 @Singleton
 class SubmissionController @Inject()(
-  appConfig: AppConfig,
-  submissionRepository: SubmissionRepository,
-  authConnector: AuthConnector,
-  notificationsRepository: NotificationsRepository
+                                      appConfig: AppConfig,
+                                      submissionRepository: SubmissionRepository,
+                                      authConnector: AuthConnector,
+                                      headerValidator: HeaderValidator,
+                                      customsDeclarationsConnector: CustomsDeclarationsConnector,
+                                      notificationsRepository: NotificationsRepository
 ) extends ImportController(authConnector) {
 
-  def saveSubmissionResponse(): Action[SubmissionResponse] =
-    Action.async(parse.json[SubmissionResponse]) { implicit request =>
-      authorizedWithEnrolment[SubmissionResponse](_ => processRequest)
-    }
+  private def xmlOrEmptyBody: BodyParser[AnyContent] = BodyParser(rq => parse.xml(rq).map {
+    case Right(xml) =>
+      Right(AnyContentAsXml(xml))
+    case _ =>
+      Right(AnyContentAsEmpty)
+  })
 
-
-  private def processRequest()(implicit request: Request[SubmissionResponse], hc: HeaderCarrier): Future[Result] = {
-    val body = request.body
-    submissionRepository
-      .save(Submission(body.eori, body.conversationId, body.ducr, body.lrn, body.mrn))
-      .map(
-        res =>
-          if (res) {
-            Logger.debug("submission data saved to DB")
-            Ok(Json.toJson(ExportsResponse(OK, "Submission response saved")))
-          } else {
-            Logger.error("error  saving submission data to DB")
-            InternalServerError("failed saving submission")
-        }
-      )
+  def submitDeclaration():  Action[AnyContent] = Action.async(bodyParser = xmlOrEmptyBody) { implicit request =>
+    implicit val headers: Map[String, String] = request.headers.toSimpleMap
+    processRequest
   }
 
 
-  def getSubmission(conversationId: String): Action[AnyContent] = Action.async { implicit request =>
-    authorizedWithEnrolment[AnyContent] { _ =>
-      submissionRepository.getByConversationId(conversationId).map { submission =>
-        Ok(Json.toJson(submission))
+
+  def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier, h: Map[String, String]): Future[Result] = {
+    //    TODO in sequence we need to validate the request????
+    //    TODO in sequence we need to validate the headers and extract
+    //   TODO change extractHeader code to do validate and extract and return
+    //    (Either Right(Value), Left ErrorResponse)
+
+
+      headerValidator.validateAndExtractHeaders match {
+        case Right(vhr) =>
+          request.body.asXml match {
+               case Some(xml) =>
+                 handleDeclarationSubmit(vhr.eori, vhr.lrn, xml).map {
+                   resp =>  Logger.debug(s"conversationId: ${resp.conversationId}")
+                     Ok
+                 }.recoverWith {
+                   case e: Exception =>
+                     Logger.error("problem calling declaration api")
+                     Future.successful(ErrorResponse.ErrorInternalServerError.XmlResult)
+                 }
+               case None =>
+                  Logger.error("body is not xml")
+                  Future.successful(ErrorResponse.ErrorInvalidPayload.XmlResult)
+             }
+        case Left(error) =>
+          Logger.error("Invalid Headers found")
+          Future.successful(error.XmlResult)
       }
-    }
+
+  }
+
+  def handleDeclarationSubmit(eori: String, lrn: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[CustomsDeclarationsResponse] = {
+    customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString())
+    ////    submissionRepository
+    ////      .save(Submission(body.eori, body.conversationId, body.lrn, body.mrn))
+    ////      .map(
+    ////        res =>
+    ////          if (res) {
+    ////            Logger.debug("submission data saved to DB")
+    ////            Ok(Json.toJson(ImportsResponse(OK, "Submission response saved")))
+    ////          } else {
+    ////            Logger.error("error  saving submission data to DB")
+    ////            InternalServerError("failed saving submission")
+    ////        }
+    ////      )
   }
 
 
-  def getSubmissionsByEori: Action[AnyContent] = Action.async { implicit request =>
-    authorizedWithEori[AnyContent] { authorizedRequest =>
-      for {
-        submissions <- submissionHelper(authorizedRequest.loggedUserEori)
-        notifications <- Future.sequence(submissions.map(submission => notificationHelper(submission.conversationId)))
-      } yield {
-        val result = submissions.zip(notifications).map((SubmissionData.buildSubmissionData _).tupled)
-
-        Ok(Json.toJson(result))
-      }
-    }
-  }
-
-  private def submissionHelper(eori: String): Future[Seq[Submission]] =
-    submissionRepository.findByEori(eori)
-
-  private def notificationHelper(conversationId: String): Future[Int] =
-    notificationsRepository.getByConversationId(conversationId).map {
-      case Some(notification) => notification.response.length
-      case None               => 0
-    }
 }
