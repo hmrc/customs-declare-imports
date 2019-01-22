@@ -13,37 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.Singleton
-import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames.{XEoriIdentifierHeaderName, XLrnHeaderName}
-
+import play.api.mvc.{AnyContent, Request}
+import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames.XLrnHeaderName
+import uk.gov.hmrc.customs.imports.models.{LocalReferenceNumber, ValidatedHeadersRequest}
+import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class HeaderValidator {
 
-  def extractLrnHeader(headers: Map[String, String]): Option[String] = {
-    headers.get(XLrnHeaderName)
+  def extractLrnHeader(headers: Seq[(String, String)]): Option[String] = {
+    headers.toMap[String, String].get(XLrnHeaderName)
   }
 
-
-  def extractEoriHeader(headers: Map[String, String]): Option[String] = {
-    headers.get(XEoriIdentifierHeaderName)
-  }
-
-  def validateAndExtractHeaders(implicit headersMap: Map[String, String]): Either[ErrorResponse, ValidatedHeadersRequest] = {
+  def validateAndExtractHeaders(implicit hc: HeaderCarrier, request: Request[AnyContent]):
+  Either[ErrorResponse, ValidatedHeadersRequest[AnyContent]] = {
     val result = for{
-      eori <- extractEoriHeader(headersMap)
-      lrn <- extractLrnHeader(headersMap)
-    } yield ValidatedHeadersRequest(eori, lrn)
+      lrn <- extractLrnHeader(hc.headers)
+    } yield ValidatedHeadersRequest(LocalReferenceNumber(lrn), request)
     result match {
       case Some(vhr) =>
         Right(vhr)
       case _ =>
         Left(ErrorResponse.ErrorInternalServerError)
     }
-
   }
 }
 

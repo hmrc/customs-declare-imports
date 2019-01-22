@@ -55,14 +55,15 @@ class SubmissionController @Inject()(
 
 
 
-  def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier, h: Map[String, String]): Future[Result] = {
+  def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier): Future[Result] = {
     //    TODO in sequence we need to validate the headers and extract
-
-      headerValidator.validateAndExtractHeaders match {
-        case Right(vhr) =>
+    for{ vhr <- headerValidator.validateAndExtractHeaders
+         ahr <- authoriseWithEori(vhr)} yield ahr
+    match {
+        case Right(authorisedRequest) =>
           request.body.asXml match {
                case Some(xml) =>
-                 handleDeclarationSubmit(vhr.eori, vhr.lrn, xml).recoverWith {
+                 handleDeclarationSubmit(authorisedRequest.eori.value, authorisedRequest.localReferenceNumber.value, xml).recoverWith {
                    case e : Exception =>
                      Logger.error(s"problem calling declaration api ${e.getMessage}")
                      Future.successful(ErrorResponse.ErrorInternalServerError.XmlResult)

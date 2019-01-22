@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.imports.controllers
 
 
 import uk.gov.hmrc.customs.imports.base.ImportsTestData
+import uk.gov.hmrc.customs.imports.controllers.actionModels.ValidatedHeadersRequest
 import uk.gov.hmrc.play.test.UnitSpec
 
 

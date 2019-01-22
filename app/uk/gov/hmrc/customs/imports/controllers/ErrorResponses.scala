@@ -86,7 +86,9 @@ case class ErrorResponse(httpStatusCode: Int, errorCode: String, message: String
 
 object ErrorResponse extends HttpStatusCodeShortDescriptions {
 
-  val ErrorUnauthorized = ErrorResponse(UNAUTHORIZED, UnauthorizedCode, "Bearer token is missing or not authorized")
+  val ErrorUnauthorized = ErrorResponse(UNAUTHORIZED, UnauthorizedCode, "Insufficient Enrolments")
+
+  def errorUnauthorized(errorMessage: String) = ErrorResponse(UNAUTHORIZED, UnauthorizedCode, errorMessage)
 
   def errorBadRequest(errorMessage: String, errorCode: String = BadRequestCode): ErrorResponse =
     ErrorResponse(BAD_REQUEST, errorCode, errorMessage)
