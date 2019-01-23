@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.imports.repositories
 import org.scalatest.BeforeAndAfterEach
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.customs.imports.base.{CustomsImportsBaseSpec, ImportsTestData}
+import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

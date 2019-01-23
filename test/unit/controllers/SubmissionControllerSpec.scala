@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.controllers
+package unit.controllers
+
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
@@ -23,12 +24,13 @@ import play.api.http.ContentTypes
 import play.api.mvc.Codec
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.customs.imports.base.{CustomsImportsBaseSpec, ImportsTestData}
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsResponse
+import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
 import uk.gov.hmrc.customs.imports.models.Submission
 import uk.gov.hmrc.http.HeaderCarrier
-
 import scala.concurrent.{ExecutionContext, Future}
+
+import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
 class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestData with MockitoSugar with BeforeAndAfterEach{
 

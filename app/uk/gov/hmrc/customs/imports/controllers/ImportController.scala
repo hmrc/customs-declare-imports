@@ -39,9 +39,11 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Either[ErrorResponse, AuthorizedRequest]] = {
     authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments){ enrolments =>
       val eori = hasEnrolment(enrolments)
-      if(eori.isDefined) {
-        Future.successful(Right(AuthorizedRequest(vpr.localReferenceNumber, Eori(eori.get.value))))
-      } else  Future.successful(Left(ErrorResponse.ErrorUnauthorized))
+        if(eori.isDefined) {
+          Future.successful(Right(AuthorizedRequest(vpr.localReferenceNumber, Eori(eori.get.value))))
+        } else {
+          Future.successful(Left(ErrorResponse.ErrorUnauthorized))
+        }
     } recover{
       case _: InsufficientEnrolments =>
         Logger.warn(s"Unauthorised access for ${request.uri}")

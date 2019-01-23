@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.connectors
+package unit.connectors
 
 import java.net.ConnectException
 import java.util.concurrent.TimeoutException
@@ -27,19 +27,20 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.ReadPreference
 import reactivemongo.api.commands.{DefaultWriteResult, WriteResult}
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.customs.imports.base.{CustomsImportsBaseSpec, ImportsTestData}
+import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
+import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames._
 import uk.gov.hmrc.customs.imports.models.Submission
 import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.http.{DefaultHttpClient, HttpClient}
 import uk.gov.hmrc.wco.dec.MetaData
-import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames._
+import util.HttpRequest
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.customs.imports.utils.HttpRequest
 
+import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
 class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with ImportsTestData {
 
@@ -256,19 +257,19 @@ def simple4xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: I
 
 }
 
-case class HttpExpectation(req: uk.gov.hmrc.customs.imports.utils.HttpRequest, resp: HttpResponse)
+case class HttpExpectation(req: HttpRequest, resp: HttpResponse)
 
 
 
 class MockHttpClient(throwOrRespond: Either[Exception, HttpExpectation], config: Configuration, auditConnector: AuditConnector, wsClient: WSClient, actorSystem: ActorSystem)
   extends DefaultHttpClient(config, auditConnector, wsClient, actorSystem = actorSystem) {
 
-  val requests: mutable.Buffer[uk.gov.hmrc.customs.imports.utils.HttpRequest] = mutable.Buffer.empty
+  val requests: mutable.Buffer[util.HttpRequest] = mutable.Buffer.empty
 
 
   override def doPostString(url: String, body: String, headers: Seq[(String, String)])
                            (implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    requests += uk.gov.hmrc.customs.imports.utils.HttpRequest(url, body, headers.toMap)
+    requests += util.HttpRequest(url, body, headers.toMap)
     throwOrRespond.fold(
       ex => Future.failed(ex),
       respond =>

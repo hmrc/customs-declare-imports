@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.utils
+package util
 
 case class HttpRequest(url: String, body: String, headers: Map[String, String])

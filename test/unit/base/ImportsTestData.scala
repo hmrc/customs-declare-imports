@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.base
+package unit.base
 
 import java.util.UUID
 
@@ -22,10 +22,10 @@ import org.joda.time.DateTime
 import play.api.http.ContentTypes
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE}
 import play.api.mvc.Codec
-import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames.{XClientIdName, XEoriIdentifierHeaderName, XLrnHeaderName}
 import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.wco.dec.{Declaration, MetaData, Response}
+import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames._
 
 import scala.util.Random
 

@@ -22,11 +22,9 @@ import play.api.http.{ContentTypes, HeaderNames, Status}
 import play.api.mvc.Codec
 import uk.gov.hmrc.customs.imports.config.AppConfig
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
-
 import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-
 
 import scala.concurrent.{ExecutionContext, Future}
 

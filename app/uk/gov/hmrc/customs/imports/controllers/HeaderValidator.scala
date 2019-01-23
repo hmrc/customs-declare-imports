@@ -17,15 +17,14 @@
 package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.Singleton
-import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames.XLrnHeaderName
 import uk.gov.hmrc.customs.imports.models.{LocalReferenceNumber, ValidatedHeadersRequest}
-import uk.gov.hmrc.http.HeaderCarrier
+
 
 @Singleton
 class HeaderValidator {
 
   def extractLrnHeader(headers: Map[String, String]): Option[String] = {
-    headers.get(XLrnHeaderName)
+    headers.get(CustomsHeaderNames.XLrnHeaderName)
   }
 
   def validateAndExtractHeaders(implicit headers: Map[String, String]):

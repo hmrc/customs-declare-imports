@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.controllers
+package unit.controllers
 
-
-import play.api.mvc.{AnyContent, Request}
-import play.api.test.FakeRequest
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.customs.imports.base.ImportsTestData
-import uk.gov.hmrc.customs.imports.models.{Eori, LocalReferenceNumber, ValidatedHeadersRequest}
+import uk.gov.hmrc.customs.imports.controllers.{ErrorResponse, HeaderValidator}
+import uk.gov.hmrc.customs.imports.models.{LocalReferenceNumber, ValidatedHeadersRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
-
+import unit.base.ImportsTestData
 
 class HeaderValidatorSpec extends UnitSpec with MockitoSugar with ImportsTestData{
 
