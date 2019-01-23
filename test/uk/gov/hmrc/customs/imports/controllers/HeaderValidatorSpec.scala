@@ -17,12 +17,18 @@
 package uk.gov.hmrc.customs.imports.controllers
 
 
+import play.api.mvc.{AnyContent, Request}
+import play.api.test.FakeRequest
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito._
+import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.imports.base.ImportsTestData
-import uk.gov.hmrc.customs.imports.controllers.actionModels.ValidatedHeadersRequest
+import uk.gov.hmrc.customs.imports.models.{Eori, LocalReferenceNumber, ValidatedHeadersRequest}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 
-class HeaderValidatorSpec extends UnitSpec  with ImportsTestData{
+class HeaderValidatorSpec extends UnitSpec with MockitoSugar with ImportsTestData{
 
   trait SetUp {
     val validator = new HeaderValidator
@@ -30,15 +36,6 @@ class HeaderValidatorSpec extends UnitSpec  with ImportsTestData{
 
   "HeaderValidator" should {
 
-    "return Eori from header when extractEori is called and eori is present" in new SetUp {
-      val extractedEori: Option[String] = validator.extractEoriHeader(ValidHeaders)
-      extractedEori shouldBe Some(declarantEoriValue)
-    }
-
-    "return None from header when extractEori is called header not present" in new SetUp {
-      val extractedEori: Option[String] = validator.extractEoriHeader(Map.empty)
-      extractedEori shouldBe None
-    }
 
     "return LRN from header when extractLRN is called and LRN is present" in new SetUp {
       val extractedLrn: Option[String] = validator.extractLrnHeader(ValidHeaders)
@@ -52,8 +49,10 @@ class HeaderValidatorSpec extends UnitSpec  with ImportsTestData{
 
     "return Right of validatedHeaderResponse when validateHeaders is called on valid headers" in new SetUp {
       implicit val h: Map[String, String] = ValidHeaders
+      implicit val hc = mock[HeaderCarrier]
+
       val result: Either[ErrorResponse, ValidatedHeadersRequest] = validator.validateAndExtractHeaders
-      result should be(Right(ValidatedHeadersRequest(declarantEoriValue, declarantLrnValue)))
+      result should be(Right(ValidatedHeadersRequest(LocalReferenceNumber(declarantLrnValue))))
     }
 
     "return Left ErrorResponse when validateHeaders is called with invalid headers" in new SetUp {

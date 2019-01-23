@@ -16,18 +16,16 @@
 
 package uk.gov.hmrc.customs.imports.models
 
-trait HasLocalReferenceNumber {
-  val localReferenceNumber: LocalReferenceNumber
-}
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, Name}
+import uk.gov.hmrc.auth.core.{AffinityGroup, Enrolments}
 
-trait HasEori {
-  val eori: Eori
-}
-
-case class LocalReferenceNumber(value: String) extends AnyVal
-
-case class Eori(value: String) extends AnyVal
-
-case class ValidatedHeadersRequest(localReferenceNumber: LocalReferenceNumber) extends HasLocalReferenceNumber
-
-case class AuthorizedRequest(localReferenceNumber: LocalReferenceNumber, eori: Eori) extends HasLocalReferenceNumber with HasEori
+case class SignedInUser(
+  credentials: Credentials,
+  name: Name,
+  email: Option[String],
+  eori: String,
+  externalId: String,
+  internalId: Option[String],
+  affinityGroup: Option[AffinityGroup],
+  enrolments: Enrolments
+)

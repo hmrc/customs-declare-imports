@@ -55,29 +55,35 @@ class SubmissionController @Inject()(
 
 
 
-  def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier): Future[Result] = {
+  def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
     //    TODO in sequence we need to validate the headers and extract
-    for{ vhr <- headerValidator.validateAndExtractHeaders
-         ahr <- authoriseWithEori(vhr)} yield ahr
-    match {
-        case Right(authorisedRequest) =>
-          request.body.asXml match {
+   headerValidator.validateAndExtractHeaders match {
+     case Right(vhr) =>
+       authoriseWithEori(vhr).flatMap {
+         case Right(ahr) => {
+             request.body.asXml match {
                case Some(xml) =>
-                 handleDeclarationSubmit(authorisedRequest.eori.value, authorisedRequest.localReferenceNumber.value, xml).recoverWith {
-                   case e : Exception =>
+                 handleDeclarationSubmit(ahr.eori.value, ahr.localReferenceNumber.value, xml).recoverWith {
+                   case e: Exception =>
                      Logger.error(s"problem calling declaration api ${e.getMessage}")
                      Future.successful(ErrorResponse.ErrorInternalServerError.XmlResult)
                  }
                case None =>
-                  Logger.error("body is not xml")
-                  Future.successful(ErrorResponse.ErrorInvalidPayload.XmlResult)
+                 Logger.error("body is not xml")
+                 Future.successful(ErrorResponse.ErrorInvalidPayload.XmlResult)
              }
-        case Left(error) =>
-          Logger.error("Invalid Headers found")
-          Future.successful(error.XmlResult)
-      }
+         }
+         case Left(error) => {
+           Logger.error("Problems with Authorisation")
+           Future.successful(error.XmlResult)
+         }
+       }
+     case Left(error) =>
+         Logger.error("Invalid Headers found")
+         Future.successful(error.XmlResult)
+     }
+   }
 
-  }
 
   def handleDeclarationSubmit(eori: String, lrn: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Result] = {
     customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString()).flatMap({ response =>

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.Singleton
-import play.api.mvc.{AnyContent, Request}
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames.XLrnHeaderName
 import uk.gov.hmrc.customs.imports.models.{LocalReferenceNumber, ValidatedHeadersRequest}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -24,15 +24,15 @@ import uk.gov.hmrc.http.HeaderCarrier
 @Singleton
 class HeaderValidator {
 
-  def extractLrnHeader(headers: Seq[(String, String)]): Option[String] = {
-    headers.toMap[String, String].get(XLrnHeaderName)
+  def extractLrnHeader(headers: Map[String, String]): Option[String] = {
+    headers.get(XLrnHeaderName)
   }
 
-  def validateAndExtractHeaders(implicit hc: HeaderCarrier, request: Request[AnyContent]):
-  Either[ErrorResponse, ValidatedHeadersRequest[AnyContent]] = {
+  def validateAndExtractHeaders(implicit headers: Map[String, String]):
+  Either[ErrorResponse, ValidatedHeadersRequest] = {
     val result = for{
-      lrn <- extractLrnHeader(hc.headers)
-    } yield ValidatedHeadersRequest(LocalReferenceNumber(lrn), request)
+      lrn <- extractLrnHeader(headers)
+    } yield ValidatedHeadersRequest(LocalReferenceNumber(lrn))
     result match {
       case Some(vhr) =>
         Right(vhr)

@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import play.api.mvc.{AnyContent, Request}
 import uk.gov.hmrc.auth.core.retrieve.Retrievals._
 import uk.gov.hmrc.auth.core.{AuthorisedFunctions, _}
 import uk.gov.hmrc.customs.imports.models.{AuthorizedRequest, Eori, ValidatedHeadersRequest}
@@ -34,13 +35,13 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
     allEnrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber"))
 
 
-  def authoriseWithEori[A](request: ValidatedHeadersRequest[A])(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, AuthorizedRequest[A]]]= {
+  def authoriseWithEori[A](vpr: ValidatedHeadersRequest)
+                          (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Either[ErrorResponse, AuthorizedRequest]] = {
     authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments){ enrolments =>
       val eori = hasEnrolment(enrolments)
       if(eori.isDefined) {
-        Future.successful(Right(AuthorizedRequest(request.localReferenceNumber, Eori(eori.get.value), request)))
-      } else  Future.successful(Left(ErrorResponse.ErrorInternalServerError))
-//      else Future.successful(Left(ErrorResponse.ErrorUnauthorized))
+        Future.successful(Right(AuthorizedRequest(vpr.localReferenceNumber, Eori(eori.get.value))))
+      } else  Future.successful(Left(ErrorResponse.ErrorUnauthorized))
     } recover{
       case _: InsufficientEnrolments =>
         Logger.warn(s"Unauthorised access for ${request.uri}")

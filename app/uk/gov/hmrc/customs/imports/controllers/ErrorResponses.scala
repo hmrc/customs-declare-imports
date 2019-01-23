@@ -58,29 +58,10 @@ case class ErrorResponse(httpStatusCode: Int, errorCode: String, message: String
   lazy val XmlResult: Result = Status(httpStatusCode)(responseXml).as(ContentTypes.XML)
 
   private lazy val responseXml: String = "<?xml version='1.0' encoding='UTF-8'?>\n" +
-//    <errorResponse>
-//      <code>{errorCode}</code>
-//      <message>{message}</message>
-//      {errors}
-//    </errorResponse>
     <errorResponse>
       <code>{errorCode}</code>
       <message>{message}</message>
     </errorResponse>
-
-//  private val errors =
-//    if (content.nonEmpty) {
-//      <errors>
-//        {content.map(c =>
-//        <error>
-//          <code>{c.code}</code>
-//          <message>{c.message}</message>
-//        </error>)}
-//      </errors>
-//    }
-//    else {
-//      NodeSeq.Empty
-//    }
 
 }
 
