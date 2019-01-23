@@ -24,13 +24,14 @@ import play.api.http.ContentTypes
 import play.api.mvc.Codec
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.auth.core.{InsufficientConfidenceLevel, InsufficientEnrolments}
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsResponse
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
 import uk.gov.hmrc.customs.imports.models.Submission
 import uk.gov.hmrc.http.HeaderCarrier
-import scala.concurrent.{ExecutionContext, Future}
-
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestData with MockitoSugar with BeforeAndAfterEach{
 
@@ -68,16 +69,35 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
           verify(mockSubmissionRepository, times(1)).save(any[Submission])
       }
 
-    "return 401 when authorisation fails" in {
-      userWithoutEori()
-      when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
-        .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
-      when(mockSubmissionRepository.save(Submission(declarantEoriValue, declarantLrnValue, any[String]))).thenReturn(Future.successful(true))
+    "return 401 when authorisation fails, no enrolments" in {
+      unAuthorisedUser(exceptionToThrow = InsufficientEnrolments("jhkjhk"))
 
       val result = route(app, fakeXmlRequestWithHeaders).value
       status(result) must be(UNAUTHORIZED)
-      verifyZeroInteractions(mockSubmissionRepository)
     }
+
+    "return 401 when authorisation fails, other authorisation Error" in {
+      unAuthorisedUser(exceptionToThrow = InsufficientConfidenceLevel("vote of no confidence"))
+
+      val result = route(app, fakeXmlRequestWithHeaders).value
+      status(result) must be(UNAUTHORIZED)
+    }
+
+    "return 401 when user is without Eori" in {
+      userWithoutEori()
+
+      val result = route(app, fakeXmlRequestWithHeaders).value
+      status(result) must be(UNAUTHORIZED)
+    }
+
+    "return 500 when authorisation fails with non auth related exception" in {
+      unAuthorisedUser(exceptionToThrow = new RuntimeException("Grrrrrr"))
+
+      val result = route(app, fakeXmlRequestWithHeaders).value
+      status(result) must be(INTERNAL_SERVER_ERROR)
+    }
+
+
 
     "return 500 when confirm submission is NOT persisted and xml request is processed" in {
       withAuthorizedUser()
@@ -117,6 +137,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       verifyZeroInteractions(mockSubmissionRepository)
 
     }
+
   }
 
 }
