@@ -140,7 +140,7 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
         withSubmissionRepository() { repo =>
           withCustomsDeclarationsConnector(http, repo) { connector =>
             connector.
-              submitImportDeclaration(declarantEoriValue,  aRandomSubmitDeclaration.toXml).
+              submitImportDeclaration(declarantEoriValue, aRandomSubmitDeclaration.toXml).
               failed.futureValue.
               asInstanceOf[BadGatewayException].
               message must be(http.badGatewayMessage(HttpVerbs.POST, submitUrl, ex))
@@ -184,7 +184,7 @@ def simple4xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: I
   withHttpClient(expectingOtherResponse(submitRequest(aRandomSubmitDeclaration.toXml, ValidAPIResponseHeaders), expectedStatus, ValidHeaders)) { http =>
     withSubmissionRepository() { repo =>
       withCustomsDeclarationsConnector(http, repo) { connector =>
-        val ex = connector.submitImportDeclaration(declarantEoriValue,  aRandomSubmitDeclaration.toXml).
+        val ex = connector.submitImportDeclaration(declarantEoriValue, aRandomSubmitDeclaration.toXml).
           failed.futureValue.asInstanceOf[Upstream4xxResponse]
         ex.upstreamResponseCode must be(expectedStatus)
         ex.reportAs must be(expectedEndStatus)
@@ -197,7 +197,7 @@ def simple4xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: I
     withHttpClient(expectingOtherResponse(submitRequest(aRandomSubmitDeclaration.toXml, ValidAPIResponseHeaders), expectedStatus, ValidHeaders)) { http =>
       withSubmissionRepository() { repo =>
         withCustomsDeclarationsConnector(http, repo) { connector =>
-          val ex = connector.submitImportDeclaration(declarantEoriValue,  aRandomSubmitDeclaration.toXml).
+          val ex = connector.submitImportDeclaration(declarantEoriValue, aRandomSubmitDeclaration.toXml).
             failed.futureValue.asInstanceOf[Upstream5xxResponse]
           ex.upstreamResponseCode must be(expectedStatus)
           ex.reportAs must be(expectedEndStatus)

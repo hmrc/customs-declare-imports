@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.customs.imports.models
 
+
 trait HasLocalReferenceNumber {
   val localReferenceNumber: LocalReferenceNumber
 }
@@ -30,4 +31,5 @@ case class Eori(value: String) extends AnyVal
 
 case class ValidatedHeadersRequest(localReferenceNumber: LocalReferenceNumber) extends HasLocalReferenceNumber
 
-case class AuthorizedRequest(localReferenceNumber: LocalReferenceNumber, eori: Eori) extends HasLocalReferenceNumber with HasEori
+case class AuthorizedImportRequest(localReferenceNumber: LocalReferenceNumber,  eori: Eori)
+  extends HasLocalReferenceNumber with HasEori

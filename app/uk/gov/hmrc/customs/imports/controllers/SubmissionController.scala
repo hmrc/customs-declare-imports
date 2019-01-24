@@ -56,7 +56,6 @@ class SubmissionController @Inject()(
 
 
   def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
-    //    TODO in sequence we need to validate the headers and extract
    headerValidator.validateAndExtractHeaders match {
      case Right(vhr) =>
        authoriseWithEori(vhr).flatMap {
@@ -86,6 +85,7 @@ class SubmissionController @Inject()(
 
 
   def handleDeclarationSubmit(eori: String, lrn: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Result] = {
+
     customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString()).flatMap({ response =>
       Logger.debug(s"conversationId: ${response.conversationId}")
       submissionRepository

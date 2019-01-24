@@ -19,7 +19,7 @@ package unit.base
 import java.util.UUID
 
 import org.joda.time.DateTime
-import play.api.http.ContentTypes
+import play.api.http.{ContentTypes, HeaderNames}
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE}
 import play.api.mvc.Codec
 import uk.gov.hmrc.customs.imports.models._
@@ -61,9 +61,12 @@ trait ImportsTestData {
   val declarantEoriValue: String = "ZZ123456789000"
   val declarantLrnValue: String = "MyLrnValue1234"
   val devclientId = "123786"
+
   val declarationApiVersion ="1.0"
+  val dummyToken = "Bearer BXQ3/Treo4kQCZvVcCqKPlwxRN4RA9Mb5RF8fFxOuwG5WSg+S+Rsp9Nq998Fgg0HeNLXL7NGwEAIzwM6vuA6YYhRQnTRFaBhrp+1w+kVW8g1qHGLYO48QPWuxdM87VMCZqxnCuDoNxVn76vwfgtpNj0+NwfzXV2Zc12L2QGgF9H9KwIkeIPK/mMlBESjue4V]"
   val Valid_X_EORI_IDENTIFIER_HEADER: (String, String) = XEoriIdentifierHeaderName -> declarantEoriValue
   val Valid_LRN_HEADER: (String, String) = XLrnHeaderName -> declarantLrnValue
+  val Valid_AUTHORIZATION_HEADER = HeaderNames.AUTHORIZATION -> dummyToken
   val XClientIdHeader: (String, String) = XClientIdName -> devclientId
   val acceptHeader: (String, String) = ACCEPT -> s"application/vnd.hmrc.$declarationApiVersion+xml"
   val contentTypeHeader: (String, String) = CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8)
@@ -71,6 +74,7 @@ trait ImportsTestData {
 
   val ValidHeaders: Map[String, String] = Map(
     contentTypeHeader,
+    Valid_AUTHORIZATION_HEADER,
     Valid_X_EORI_IDENTIFIER_HEADER,
     Valid_LRN_HEADER
   )

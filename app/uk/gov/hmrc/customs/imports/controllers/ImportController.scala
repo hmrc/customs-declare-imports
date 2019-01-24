@@ -21,7 +21,7 @@ import play.api.Logger
 import play.api.mvc.{AnyContent, Request}
 import uk.gov.hmrc.auth.core.retrieve.Retrievals._
 import uk.gov.hmrc.auth.core.{AuthorisedFunctions, _}
-import uk.gov.hmrc.customs.imports.models.{AuthorizedRequest, Eori, ValidatedHeadersRequest}
+import uk.gov.hmrc.customs.imports.models.{AuthorizedImportRequest, Eori, ValidatedHeadersRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -36,11 +36,11 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
 
 
   def authoriseWithEori[A](vpr: ValidatedHeadersRequest)
-                          (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Either[ErrorResponse, AuthorizedRequest]] = {
+                          (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Either[ErrorResponse, AuthorizedImportRequest]] = {
     authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments){ enrolments =>
       val eori = hasEnrolment(enrolments)
         if(eori.isDefined) {
-          Future.successful(Right(AuthorizedRequest(vpr.localReferenceNumber, Eori(eori.get.value))))
+          Future.successful(Right(AuthorizedImportRequest(vpr.localReferenceNumber, Eori(eori.get.value))))
         } else {
           Future.successful(Left(ErrorResponse.ErrorUnauthorized))
         }
@@ -48,8 +48,8 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
       case _: InsufficientEnrolments =>
         Logger.warn(s"Unauthorised access for ${request.uri}")
         Left(ErrorResponse.errorUnauthorized("Unauthorized for imports"))
-      case _: AuthorisationException =>
-        Logger.warn(s"Unauthorised Exception for ${request.uri}")
+      case e: AuthorisationException =>
+        Logger.warn(s"Unauthorised Exception for ${request.uri} ${e.reason}")
         Left(ErrorResponse.errorUnauthorized("Unauthorized for imports"))
       case ex: Throwable =>
         Logger.error("Internal server error is " + ex.getMessage)

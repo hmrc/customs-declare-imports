@@ -77,7 +77,7 @@ class CustomsDeclarationsConnector @Inject()(appConfig: AppConfig,
     httpClient.POSTString[CustomsDeclarationsResponse](
       url = s"${appConfig.customsDeclarationsHostName}:${appConfig.customsDeclarationsPort}$uri",
       body = body,
-      headers = headers(eori)
+      headers = hc.headers ++ headers(eori)
     )(responseReader, hc, ec)
 
   private def headers(eori: String): Seq[(String, String)] = Seq(
@@ -85,6 +85,7 @@ class CustomsDeclarationsConnector @Inject()(appConfig: AppConfig,
     HeaderNames.ACCEPT -> s"application/vnd.hmrc.${appConfig.customsDeclarationsApiVersion}+xml",
     HeaderNames.CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8),
     CustomsHeaderNames.XEoriIdentifierHeaderName -> eori
+
   )
 
 }

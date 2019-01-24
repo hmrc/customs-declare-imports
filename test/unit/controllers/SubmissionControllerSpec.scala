@@ -44,6 +44,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
   val fakeXmlRequestWithHeaders: FakeRequest[String] = fakeXmlRequest
     .withHeaders(CustomsHeaderNames.XLrnHeaderName -> "ohkjhkjhkjhk",
+      AUTHORIZATION -> dummyToken,
       CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
 
@@ -60,7 +61,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
       "return 200 when submission is persisted and xml request is processed" in {
         withAuthorizedUser()
-        when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
+        when(mockDeclarationsApiConnector.submitImportDeclaration(any[String],  any[String])(any[HeaderCarrier],any[ExecutionContext]))
           .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
         when(mockSubmissionRepository.save(Submission(declarantEoriValue, declarantLrnValue, any[String]))).thenReturn(Future.successful(true))
 

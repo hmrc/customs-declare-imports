@@ -27,6 +27,7 @@ class HeaderValidator {
     headers.get(CustomsHeaderNames.XLrnHeaderName)
   }
 
+
   def validateAndExtractHeaders(implicit headers: Map[String, String]):
   Either[ErrorResponse, ValidatedHeadersRequest] = {
     val result = for{
