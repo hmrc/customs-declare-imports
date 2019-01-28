@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.base
+package unit.base
 
 import java.util.UUID
 
@@ -31,7 +31,7 @@ import play.api.libs.concurrent.Execution.Implicits
 import play.api.libs.json.JsValue
 import play.api.mvc.AnyContentAsJson
 import play.api.test.FakeRequest
-import uk.gov.hmrc.auth.core._
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.customs.imports.config.AppConfig
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
 import uk.gov.hmrc.customs.imports.repositories.{NotificationsRepository, SubmissionRepository}
@@ -42,7 +42,7 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 trait CustomsImportsBaseSpec
-    extends PlaySpec with GuiceOneAppPerSuite with MockitoSugar with ScalaFutures {
+    extends PlaySpec with GuiceOneAppPerSuite with MockitoSugar with ScalaFutures with AuthTestSupport {
 
   val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
   val mockNotificationsRepository: NotificationsRepository = mock[NotificationsRepository]
@@ -58,6 +58,8 @@ trait CustomsImportsBaseSpec
   override lazy val app: Application =
     GuiceApplicationBuilder()
       .overrides(
+        bind[AuthConnector].to(mockAuthConnector),
+
         bind[SubmissionRepository].to(mockSubmissionRepository),
         bind[NotificationsRepository].to(mockNotificationsRepository),
         bind[CustomsDeclarationsConnector].to(mockDeclarationsApiConnector)
@@ -80,7 +82,6 @@ trait CustomsImportsBaseSpec
       SessionKeys.sessionId -> s"session-${UUID.randomUUID()}",
       SessionKeys.userId -> "Int-ba17b467-90f3-42b6-9570-73be7b78eb2b"
     )
-
 
     FakeRequest("POST", uri)
       .withHeaders(headers.toSeq: _*)

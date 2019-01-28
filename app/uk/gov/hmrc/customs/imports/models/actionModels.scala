@@ -14,6 +14,22 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.utils
+package uk.gov.hmrc.customs.imports.models
 
-case class HttpRequest(url: String, body: String, headers: Map[String, String])
+
+trait HasLocalReferenceNumber {
+  val localReferenceNumber: LocalReferenceNumber
+}
+
+trait HasEori {
+  val eori: Eori
+}
+
+case class LocalReferenceNumber(value: String) extends AnyVal
+
+case class Eori(value: String) extends AnyVal
+
+case class ValidatedHeadersRequest(localReferenceNumber: LocalReferenceNumber) extends HasLocalReferenceNumber
+
+case class AuthorizedImportRequest(localReferenceNumber: LocalReferenceNumber,  eori: Eori)
+  extends HasLocalReferenceNumber with HasEori

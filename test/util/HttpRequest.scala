@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.models
+package util
 
-import play.api.mvc.{Request, WrappedRequest}
-
-case class AuthorizedRequest[A](request: Request[A]) extends WrappedRequest[A](request)
+case class HttpRequest(url: String, body: String, headers: Map[String, String])

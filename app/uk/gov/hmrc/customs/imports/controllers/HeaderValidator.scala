@@ -17,33 +17,28 @@
 package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.Singleton
-import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames.{XEoriIdentifierHeaderName, XLrnHeaderName}
+import uk.gov.hmrc.customs.imports.models.{LocalReferenceNumber, ValidatedHeadersRequest}
 
 
 @Singleton
 class HeaderValidator {
 
   def extractLrnHeader(headers: Map[String, String]): Option[String] = {
-    headers.get(XLrnHeaderName)
+    headers.get(CustomsHeaderNames.XLrnHeaderName)
   }
 
 
-  def extractEoriHeader(headers: Map[String, String]): Option[String] = {
-    headers.get(XEoriIdentifierHeaderName)
-  }
-
-  def validateAndExtractHeaders(implicit headersMap: Map[String, String]): Either[ErrorResponse, ValidatedHeadersRequest] = {
+  def validateAndExtractHeaders(implicit headers: Map[String, String]):
+  Either[ErrorResponse, ValidatedHeadersRequest] = {
     val result = for{
-      eori <- extractEoriHeader(headersMap)
-      lrn <- extractLrnHeader(headersMap)
-    } yield ValidatedHeadersRequest(eori, lrn)
+      lrn <- extractLrnHeader(headers)
+    } yield ValidatedHeadersRequest(LocalReferenceNumber(lrn))
     result match {
       case Some(vhr) =>
         Right(vhr)
       case _ =>
         Left(ErrorResponse.ErrorInternalServerError)
     }
-
   }
 }
 

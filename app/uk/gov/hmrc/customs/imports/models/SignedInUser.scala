@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.controllers
+package uk.gov.hmrc.customs.imports.models
 
-case class ValidatedHeadersRequest(eori: String, lrn: String)
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, Name}
+import uk.gov.hmrc.auth.core.{AffinityGroup, Enrolments}
+
+case class SignedInUser(
+  credentials: Credentials,
+  name: Name,
+  email: Option[String],
+  eori: String,
+  externalId: String,
+  internalId: Option[String],
+  affinityGroup: Option[AffinityGroup],
+  enrolments: Enrolments
+)
