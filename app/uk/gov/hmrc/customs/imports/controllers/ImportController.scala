@@ -44,7 +44,7 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
         } else {
           Future.successful(Left(ErrorResponse.ErrorUnauthorized))
         }
-    } recover{
+    } recover {
       case _: InsufficientEnrolments =>
         Logger.warn(s"Unauthorised access for ${request.uri}")
         Left(ErrorResponse.errorUnauthorized("Unauthorized for imports"))

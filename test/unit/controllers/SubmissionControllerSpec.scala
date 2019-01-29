@@ -66,6 +66,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
         when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
           .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
         when(mockSubmissionRepository.save(any[Submission])).thenReturn(Future.successful(mockWriteResult))
+        when(mockWriteResult.ok).thenReturn(true)
 
         val result = route(app, fakeXmlRequestWithHeaders).value
         status(result) must be(OK)
