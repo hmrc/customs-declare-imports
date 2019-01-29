@@ -91,7 +91,7 @@ class SubmissionController @Inject()(
       submissionRepository
         .save(Submission(eori, lrn, None))
         .map({ res =>
-          if (res) {
+          if (res.ok) {
             Logger.debug("submission data saved to DB")
             Ok(Json.toJson(ImportsResponse(OK, "Submission response saved")))
           } else {

@@ -24,6 +24,7 @@ import play.api.http.ContentTypes
 import play.api.mvc.Codec
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import reactivemongo.api.commands.WriteResult
 import uk.gov.hmrc.auth.core.{InsufficientConfidenceLevel, InsufficientEnrolments}
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsResponse
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
@@ -61,9 +62,10 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
       "return 200 when submission is persisted and xml request is processed" in {
         withAuthorizedUser()
+        val mockWriteResult = mock[WriteResult]
         when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
           .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
-        when(mockSubmissionRepository.save(any[Submission])).thenReturn(Future.successful(true))
+        when(mockSubmissionRepository.save(any[Submission])).thenReturn(Future.successful(mockWriteResult))
 
         val result = route(app, fakeXmlRequestWithHeaders).value
         status(result) must be(OK)
@@ -102,9 +104,10 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
     "return 500 when confirm submission is NOT persisted and xml request is processed" in {
       withAuthorizedUser()
+      val mockWriteResult = mock[WriteResult]
       when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
         .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
-      when(mockSubmissionRepository.save(Submission(declarantEoriValue, declarantLrnValue))).thenReturn(Future.successful(false))
+      when(mockSubmissionRepository.save(Submission(declarantEoriValue, declarantLrnValue))).thenReturn(Future.successful(mockWriteResult))
       val result = route(app, fakeXmlRequestWithHeaders).value
       status(result) must be(INTERNAL_SERVER_ERROR)
       verify(mockSubmissionRepository, times(1)).save(any[Submission])
