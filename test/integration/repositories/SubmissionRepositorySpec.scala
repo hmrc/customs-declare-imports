@@ -23,14 +23,16 @@ import uk.gov.hmrc.customs.imports.models.Submission
 import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 class SubmissionRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfterEach
   with ImportsTestData {
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    repo.removeAll()
+    Await.result(repo.removeAll(), 1 second)
   }
 
   override lazy val app: Application = GuiceApplicationBuilder().build()
