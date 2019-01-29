@@ -29,17 +29,11 @@ class AppConfig @Inject()(override val runModeConfiguration: Configuration, val 
 
   override protected def appNameConfiguration: Configuration = runModeConfiguration
 
-  lazy val customsDeclarationsHostName: String =
-    getConfString("customs-declarations.host", throw new IllegalStateException("Missing configuration for Customs Declarations HostName"))
+  lazy val customsDeclarationsBaseUrl = baseUrl("customs-declarations")
 
-  lazy val customsDeclarationsPort: String =
-    getConfString("customs-declarations.port", throw new IllegalStateException("Missing configuration for Customs Declarations Port"))
+  lazy val customsDeclarationsApiVersion: String = getString("microservice.services.customs-declarations.api-version")
 
-  lazy val customsDeclarationsApiVersion: String =
-    getConfString("customs-declarations.api-version", throw new IllegalStateException("Missing configuration for Customs Declarations API version"))
-
-  lazy val submitImportDeclarationUri: String =
-    getConfString("customs-declarations.submit-uri", throw new IllegalStateException("Missing configuration for Customs Declarations submission URI"))
+  lazy val submitImportDeclarationUri: String = getString("microservice.services.customs-declarations.submit-uri")
 
   lazy val developerHubClientId: String = appName
 }
