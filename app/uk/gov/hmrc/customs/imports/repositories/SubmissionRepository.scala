@@ -39,14 +39,10 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
 
   override def indexes: Seq[Index] = Seq(
     Index(Seq("eori" -> IndexType.Ascending), name = Some("eoriIdx")),
-    Index(Seq("conversationId" -> IndexType.Ascending), unique = true, name = Some("conversationIdIdx")),
-    Index(Seq("lrn" -> IndexType.Ascending), name = Some("lrnIdx"))
+    Index(Seq("localReferenceNumber" -> IndexType.Ascending), name = Some("lrnIdx"))
   )
 
   def findByEori(eori: String): Future[Seq[Submission]] = find("eori" -> JsString(eori))
-
-  def getByConversationId(conversationId: String): Future[Option[Submission]] =
-    find("conversationId" -> JsString(conversationId)).map(_.headOption)
 
   def getByEoriAndMrn(eori: String, mrn: String): Future[Option[Submission]] =
     find("eori" -> JsString(eori), "mrn" -> JsString(mrn)).map(_.headOption)
@@ -62,7 +58,7 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
   }
 
   def updateSubmission(submission: Submission): Future[Boolean] = {
-    val finder = BSONDocument("_id" -> submission.id, "conversationId" -> submission.conversationId)
+    val finder = BSONDocument("_id" -> submission.id, "mrn" -> submission.mrn)
 
     val modifier = BSONDocument(
       "$set" ->

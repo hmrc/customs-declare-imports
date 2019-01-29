@@ -89,7 +89,7 @@ class SubmissionController @Inject()(
     customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString()).flatMap({ response =>
       Logger.debug(s"conversationId: ${response.conversationId}")
       submissionRepository
-        .save(Submission(eori, response.conversationId, lrn, None))
+        .save(Submission(eori, lrn, None))
         .map({ res =>
           if (res) {
             Logger.debug("submission data saved to DB")

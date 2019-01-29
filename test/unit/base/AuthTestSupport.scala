@@ -28,7 +28,7 @@ import uk.gov.hmrc.customs.imports.models.SignedInUser
 
 import scala.concurrent.Future
 
-trait AuthTestSupport extends MockitoSugar {
+trait AuthTestSupport extends MockitoSugar with ImportsTestData {
 
   lazy val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
@@ -39,7 +39,7 @@ trait AuthTestSupport extends MockitoSugar {
       p == enrolment && user.enrolments.getEnrolment("HMRC-CUS-ORG").isDefined
   }
 
-  def withAuthorizedUser(user: SignedInUser = newUser("12345", "external1")): Unit =
+  def withAuthorizedUser(user: SignedInUser = newUser(declarantEoriValue, "external1")): Unit =
     when(
       mockAuthConnector.authorise(
         ArgumentMatchers.argThat(cdsEnrollmentMatcher(user)),
@@ -47,7 +47,7 @@ trait AuthTestSupport extends MockitoSugar {
       )(any(), any())
     ).thenReturn(Future.successful(user.enrolments))
 
-  def userWithoutEori(user: SignedInUser = newUser("12345", "external1")): Unit =
+  def userWithoutEori(user: SignedInUser = newUser(declarantEoriValue, "external1")): Unit =
     when(
       mockAuthConnector.authorise(
         ArgumentMatchers.argThat(cdsEnrollmentMatcher(user)),
@@ -55,7 +55,7 @@ trait AuthTestSupport extends MockitoSugar {
       )(any(), any())
     ).thenReturn(Future.successful(Enrolments(Set())))
 
-  def unAuthorisedUser(user: SignedInUser = newUser("12345", "external1"), exceptionToThrow: Throwable): Unit =
+  def unAuthorisedUser(user: SignedInUser = newUser(declarantEoriValue, "external1"), exceptionToThrow: Throwable): Unit =
     when(
       mockAuthConnector.authorise(
         ArgumentMatchers.argThat(cdsEnrollmentMatcher(user)),

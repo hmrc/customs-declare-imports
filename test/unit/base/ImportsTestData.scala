@@ -45,10 +45,9 @@ trait ImportsTestData {
   val ducr: String = randomString(SIXTEEN)
 
   val before: Long = System.currentTimeMillis()
-  val submission = Submission(eori, conversationId, lrn, Some(mrn))
-  val submissionData: SubmissionData = SubmissionData.buildSubmissionData(submission, 0)
+  val submission = Submission(eori, lrn, Some(mrn))
+
   val seqSubmissions: Seq[Submission] = Seq(submission)
-  val seqSubmissionData: Seq[SubmissionData] = Seq(submissionData)
 
   val now: DateTime = DateTime.now
   val response1: Seq[Response] = Seq(Response(functionCode = Random.nextInt(), functionalReferenceId = Some("123")))

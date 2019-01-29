@@ -237,8 +237,6 @@ def simple4xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: I
 
     override def findByEori(eori: String): Future[Seq[Submission]] = throw new IllegalArgumentException("Unexpected call")
 
-    override def getByConversationId(conversationId: String): Future[Option[Submission]] = throw new IllegalArgumentException("Unexpected call")
-
     override def getByEoriAndMrn(eori: String, mrn: String): Future[Option[Submission]] = throw new IllegalArgumentException("Unexpected call")
 
     override def insert(entity: Submission)(implicit ec: ExecutionContext): Future[WriteResult] = {

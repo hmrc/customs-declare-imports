@@ -41,30 +41,23 @@ class SubmissionRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfte
       val foundSubmission = repo.findByEori(eori).futureValue
       foundSubmission.length must be(1)
       foundSubmission.head.eori must be(eori)
-      foundSubmission.head.conversationId must be(conversationId)
       foundSubmission.head.mrn must be(Some(mrn))
 
       // a timestamp has been generated representing "creation time" of case class instance
       foundSubmission.head.submittedTimestamp must (be >= before).and(be <= System.currentTimeMillis())
 
-      // we can also retrieve the submission individually by conversation ID
-      val submission1 = repo.getByConversationId(conversationId).futureValue.value
-      submission1.eori must be(eori)
-      submission1.conversationId must be(conversationId)
-      submission1.mrn must be(Some(mrn))
 
       // or we can retrieve it by eori and MRN
       val submission2 = repo.getByEoriAndMrn(eori, mrn).futureValue.value
       submission2.eori must be(eori)
-      submission2.conversationId must be(conversationId)
       submission2.mrn must be(Some(mrn))
 
       // update status test
-      val submissionToUpdate = repo.getByConversationId(conversationId).futureValue.value
+      val submissionToUpdate = repo.getByEoriAndMrn(eori, mrn).futureValue.value
 
       repo.updateSubmission(submissionToUpdate).futureValue must be(true)
 
-      val newSubmission = repo.getByConversationId(conversationId).futureValue.value
+      val newSubmission = repo.getByEoriAndMrn(eori, mrn).futureValue.value
 
       newSubmission must be(submissionToUpdate)
     }

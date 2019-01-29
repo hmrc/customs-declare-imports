@@ -43,14 +43,14 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
     .withBody(xmlBody).withHeaders(CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
   val fakeXmlRequestWithHeaders: FakeRequest[String] = fakeXmlRequest
-    .withHeaders(CustomsHeaderNames.XLrnHeaderName -> "ohkjhkjhkjhk",
+    .withHeaders(CustomsHeaderNames.XLrnHeaderName -> declarantLrnValue,
       AUTHORIZATION -> dummyToken,
       CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
 
   val fakeNonXmlRequestWithHeaders: FakeRequest[String] = FakeRequest("POST", saveUri)
     .withBody("SOMEUNKNOWNTEXTNOTXML")
-    .withHeaders(CustomsHeaderNames.XLrnHeaderName -> "ohkjhkjhkjhk",
+    .withHeaders(CustomsHeaderNames.XLrnHeaderName -> declarantLrnValue,
       CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
   override def beforeEach() {
@@ -61,9 +61,9 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
       "return 200 when submission is persisted and xml request is processed" in {
         withAuthorizedUser()
-        when(mockDeclarationsApiConnector.submitImportDeclaration(any[String],  any[String])(any[HeaderCarrier],any[ExecutionContext]))
+        when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
           .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
-        when(mockSubmissionRepository.save(Submission(declarantEoriValue, declarantLrnValue, any[String]))).thenReturn(Future.successful(true))
+        when(mockSubmissionRepository.save(any[Submission])).thenReturn(Future.successful(true))
 
         val result = route(app, fakeXmlRequestWithHeaders).value
         status(result) must be(OK)
@@ -104,7 +104,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       withAuthorizedUser()
       when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
         .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
-      when(mockSubmissionRepository.save(Submission(declarantEoriValue, declarantLrnValue, any[String]))).thenReturn(Future.successful(false))
+      when(mockSubmissionRepository.save(Submission(declarantEoriValue, declarantLrnValue))).thenReturn(Future.successful(false))
       val result = route(app, fakeXmlRequestWithHeaders).value
       status(result) must be(INTERNAL_SERVER_ERROR)
       verify(mockSubmissionRepository, times(1)).save(any[Submission])
