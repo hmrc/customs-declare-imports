@@ -47,25 +47,20 @@ class AppConfigSpec extends UnitSpec with MockitoSugar {
 
       configService.customsDeclarationsApiVersion shouldBe "1.0"
       configService.submitImportDeclarationUri shouldBe "/declarations"
-      configService.customsDeclarationsHostName shouldBe "remotedec-api"
-      configService.customsDeclarationsPort shouldBe "6000"
+      configService.customsDeclarationsBaseUrl shouldBe "http://remotedec-api:6000"
     }
-
 
     "throw an exception when configuration is invalid" in {
       val configService: AppConfig = customsConfigService(emptyServicesConfiguration)
 
-      val caught1: IllegalStateException = intercept[IllegalStateException](configService.customsDeclarationsHostName)
-      caught1.getMessage shouldBe "Missing configuration for Customs Declarations HostName"
+      val caught1: RuntimeException = intercept[RuntimeException](configService.customsDeclarationsBaseUrl)
+      caught1.getMessage shouldBe "Could not find config customs-declarations.host"
 
-      val caught2: IllegalStateException = intercept[IllegalStateException](configService.customsDeclarationsPort)
-      caught2.getMessage shouldBe "Missing configuration for Customs Declarations Port"
+      val caught3: RuntimeException = intercept[RuntimeException](configService.customsDeclarationsApiVersion)
+      caught3.getMessage shouldBe "Could not find config key 'microservice.services.customs-declarations.api-version'"
 
-      val caught3: IllegalStateException = intercept[IllegalStateException](configService.customsDeclarationsApiVersion)
-      caught3.getMessage shouldBe "Missing configuration for Customs Declarations API version"
-
-      val caught4: IllegalStateException = intercept[IllegalStateException](configService.submitImportDeclarationUri)
-      caught4.getMessage shouldBe "Missing configuration for Customs Declarations submission URI"
+      val caught4: RuntimeException = intercept[RuntimeException](configService.submitImportDeclarationUri)
+      caught4.getMessage shouldBe "Could not find config key 'microservice.services.customs-declarations.submit-uri'"
     }
   }
 
