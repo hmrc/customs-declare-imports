@@ -34,6 +34,7 @@ import scala.xml.NodeSeq
 
 @Singleton
 class ImportService @Inject()(submissionRepository: SubmissionRepository, customsDeclarationsConnector: CustomsDeclarationsConnector) {
+
   def handleDeclarationSubmit(eori: String, localReferenceNumber: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Result] = {
     customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString()).flatMap({ response =>
       Logger.debug(s"conversationId: ${response.conversationId}")
@@ -50,6 +51,5 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository, custom
         })
     })
   }
-
 
 }
