@@ -27,11 +27,11 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.{InsufficientConfidenceLevel, InsufficientEnrolments}
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsResponse
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
-import uk.gov.hmrc.customs.imports.models.Submission
 import uk.gov.hmrc.http.HeaderCarrier
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.xml.NodeSeq
 
 class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestData with MockitoSugar with BeforeAndAfterEach{
 
@@ -43,99 +43,93 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
     .withBody(xmlBody).withHeaders(CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
   val fakeXmlRequestWithHeaders: FakeRequest[String] = fakeXmlRequest
-    .withHeaders(CustomsHeaderNames.XLrnHeaderName -> "ohkjhkjhkjhk",
+    .withHeaders(CustomsHeaderNames.XLrnHeaderName -> declarantLrnValue,
       AUTHORIZATION -> dummyToken,
       CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
 
   val fakeNonXmlRequestWithHeaders: FakeRequest[String] = FakeRequest("POST", saveUri)
     .withBody("SOMEUNKNOWNTEXTNOTXML")
-    .withHeaders(CustomsHeaderNames.XLrnHeaderName -> "ohkjhkjhkjhk",
-      CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
+    .withHeaders(CustomsHeaderNames.XLrnHeaderName -> declarantLrnValue,
+      CONTENT_TYPE -> ContentTypes.JSON)
 
   override def beforeEach() {
-    reset(mockSubmissionRepository, mockDeclarationsApiConnector, mockAuthConnector)
+    reset(mockImportService, mockAuthConnector)
   }
 
   "POST /declaration " should {
 
       "return 200 when submission is persisted and xml request is processed" in {
         withAuthorizedUser()
-        when(mockDeclarationsApiConnector.submitImportDeclaration(any[String],  any[String])(any[HeaderCarrier],any[ExecutionContext]))
+        when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
           .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
-        when(mockSubmissionRepository.save(Submission(declarantEoriValue, declarantLrnValue, any[String]))).thenReturn(Future.successful(true))
+        when(mockImportService.handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier])).thenReturn(Future.successful(true))
 
-        val result = route(app, fakeXmlRequestWithHeaders).value
-        status(result) must be(OK)
-          verify(mockSubmissionRepository, times(1)).save(any[Submission])
+        val result = route(app, fakeXmlRequestWithHeaders).get
+          status(result) shouldBe ACCEPTED
+            verify(mockImportService, times(1)).handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier])
       }
 
     "return 401 when authorisation fails, no enrolments" in {
       unAuthorisedUser(exceptionToThrow = InsufficientEnrolments("jhkjhk"))
 
-      val result = route(app, fakeXmlRequestWithHeaders).value
-      status(result) must be(UNAUTHORIZED)
+      val result = route(app, fakeXmlRequestWithHeaders).get
+        status(result) shouldBe UNAUTHORIZED
     }
 
     "return 401 when authorisation fails, other authorisation Error" in {
       unAuthorisedUser(exceptionToThrow = InsufficientConfidenceLevel("vote of no confidence"))
 
-      val result = route(app, fakeXmlRequestWithHeaders).value
-      status(result) must be(UNAUTHORIZED)
+      val result = route(app, fakeXmlRequestWithHeaders).get
+        status(result) shouldBe UNAUTHORIZED
     }
 
     "return 401 when user is without Eori" in {
       userWithoutEori()
 
-      val result = route(app, fakeXmlRequestWithHeaders).value
-      status(result) must be(UNAUTHORIZED)
+      val result = route(app, fakeXmlRequestWithHeaders).get
+        status(result) shouldBe UNAUTHORIZED
     }
 
     "return 500 when authorisation fails with non auth related exception" in {
       unAuthorisedUser(exceptionToThrow = new RuntimeException("Grrrrrr"))
 
-      val result = route(app, fakeXmlRequestWithHeaders).value
-      status(result) must be(INTERNAL_SERVER_ERROR)
+      val result = route(app, fakeXmlRequestWithHeaders).get
+      status(result) shouldBe INTERNAL_SERVER_ERROR
     }
 
 
 
     "return 500 when confirm submission is NOT persisted and xml request is processed" in {
       withAuthorizedUser()
-      when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
-        .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
-      when(mockSubmissionRepository.save(Submission(declarantEoriValue, declarantLrnValue, any[String]))).thenReturn(Future.successful(false))
-      val result = route(app, fakeXmlRequestWithHeaders).value
-      status(result) must be(INTERNAL_SERVER_ERROR)
-      verify(mockSubmissionRepository, times(1)).save(any[Submission])
+      when(mockImportService.handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier])).thenReturn(Future.successful(false))
+
+        val result = route(app, fakeXmlRequestWithHeaders).get
+      status(result) shouldBe INTERNAL_SERVER_ERROR
     }
 
     "return 500 when something goes wrong" in {
       withAuthorizedUser()
-      when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
-        .thenReturn(Future.failed(httpException))
+      when(mockImportService.handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier]))
+        .thenReturn(Future.failed(new RuntimeException("Mongo say no go")))
 
-      val result = route(app, fakeXmlRequestWithHeaders).value
-      status(result) must be(INTERNAL_SERVER_ERROR)
-      verifyZeroInteractions(mockSubmissionRepository)
+      val result = route(app, fakeXmlRequestWithHeaders).get
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+
     }
 
     "return 400 when nonXMl is sent" in {
-      when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
-        .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
 
-      val result = route(app, fakeNonXmlRequestWithHeaders).value
-      status(result) must be(BAD_REQUEST)
-      verifyZeroInteractions(mockSubmissionRepository)
+      val result = route(app, fakeNonXmlRequestWithHeaders).get
+      status(result) shouldBe BAD_REQUEST
+
     }
 
     "return 500 when headers not present" in {
-      when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
-        .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
 
-      val result = route(app, fakeXmlRequest).value
-      status(result) must be(INTERNAL_SERVER_ERROR)
-      verifyZeroInteractions(mockSubmissionRepository)
+      val result = route(app, fakeXmlRequest).get
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+
 
     }
 

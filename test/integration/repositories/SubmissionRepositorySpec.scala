@@ -14,59 +14,110 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.repositories
+package integration.repositories
 
+import akka.stream.Materializer
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.concurrent.Execution.Implicits
+import uk.gov.hmrc.customs.imports.models.Submission
+import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
+import uk.gov.hmrc.play.test.UnitSpec
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
-class SubmissionRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfterEach with ImportsTestData {
+class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
+  with ImportsTestData with GuiceOneAppPerSuite with MockitoSugar with ScalaFutures{
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    repo.removeAll()
+    Await.result(repo.removeAll(), 1 second)
   }
+  protected def component[T: ClassTag]: T = app.injector.instanceOf[T]
 
   override lazy val app: Application = GuiceApplicationBuilder().build()
   val repo: SubmissionRepository = component[SubmissionRepository]
 
+
+  implicit val mat: Materializer = app.materializer
+
+  implicit val ec: ExecutionContext = Implicits.defaultContext
+
+  implicit lazy val patience: PatienceConfig =
+    PatienceConfig(timeout = 5.seconds, interval = 50.milliseconds) // be more patient than the default
+
+
   "SubmissionRepository" should {
-    "save declaration with EORI and timestamp" in {
-      repo.save(submission).futureValue must be(true)
+    "save submission, return true. Persisted submission should be correct" in {
+        repo.insert(submission).futureValue.ok shouldBe true
 
-      // we can now display a list of all the declarations belonging to the current user, searching by EORI
+        // we can now display a list of all the declarations belonging to the current user, searching by EORI
+        val foundSubmission = repo.findByEori(eori).futureValue
+        foundSubmission.length shouldBe 1
+        foundSubmission.head.eori shouldBe eori
+        foundSubmission.head.mrn shouldBe Some(mrn)
+
+        // a timestamp has been generated representing "creation time" of case class instance
+        foundSubmission.head.submittedDateTime should (be >= before).and(be <= System.currentTimeMillis())
+
+    }
+
+    "findByEori returns the correct persisted submission " in {
+
+      val differentSubmission = Submission(eori + 123, lrn + 123, Some(mrn + 123 ))
+
+      repo.insert(submission).futureValue.ok shouldBe true
+
+      repo.insert(differentSubmission).futureValue.ok shouldBe true
+
       val foundSubmission = repo.findByEori(eori).futureValue
-      foundSubmission.length must be(1)
-      foundSubmission.head.eori must be(eori)
-      foundSubmission.head.conversationId must be(conversationId)
-      foundSubmission.head.mrn must be(Some(mrn))
+      foundSubmission.length shouldBe 1
+      foundSubmission.head.eori shouldBe eori
+      foundSubmission.head.mrn shouldBe Some(mrn)
 
-      // a timestamp has been generated representing "creation time" of case class instance
-      foundSubmission.head.submittedTimestamp must (be >= before).and(be <= System.currentTimeMillis())
+    }
 
-      // we can also retrieve the submission individually by conversation ID
-      val submission1 = repo.getByConversationId(conversationId).futureValue.value
-      submission1.eori must be(eori)
-      submission1.conversationId must be(conversationId)
-      submission1.mrn must be(Some(mrn))
+    "findByEori returns empty Seq when it cannot find a matching submission" in {
+
+      val result = repo.findByEori("someRandomString").futureValue
+      result.isEmpty shouldBe true
+    }
+
+    "getByEoriAndMrn returns the correct persisted submission " in {
+
+      repo.insert(submission).futureValue.ok shouldBe true
 
       // or we can retrieve it by eori and MRN
-      val submission2 = repo.getByEoriAndMrn(eori, mrn).futureValue.value
-      submission2.eori must be(eori)
-      submission2.conversationId must be(conversationId)
-      submission2.mrn must be(Some(mrn))
-
-      // update status test
-      val submissionToUpdate = repo.getByConversationId(conversationId).futureValue.value
-
-      repo.updateSubmission(submissionToUpdate).futureValue must be(true)
-
-      val newSubmission = repo.getByConversationId(conversationId).futureValue.value
-
-      newSubmission must be(submissionToUpdate)
+      val submission2 = await(repo.getByEoriAndMrn(eori, mrn)).get
+      submission2.eori shouldBe eori
+      submission2.mrn shouldBe Some(mrn)
     }
+
+    "updateSubmission updates the submission when called" in {
+      await(repo.insert(submission)).ok shouldBe true
+      // update status test
+      val submissionToUpdate = await(repo.getByEoriAndMrn(eori, mrn)).get
+      val updatedSubmission = submissionToUpdate.copy(mrn = Some(mrn + 123))
+
+      await(repo.updateSubmission(updatedSubmission))
+
+      val newSubmission = await(repo.getByEoriAndMrn(eori, mrn + 123)).get
+
+      newSubmission shouldBe updatedSubmission
+    }
+
+    // TODO add unhappy paths for save, update and getBy[X]
+    // the findBy Test is flaky and fails with duplicate key error
+    //The future returned an exception of type: reactivemongo.api.commands.LastError, with message: DatabaseException['E11000 duplicate key error collection: customs-declare-imports.submissions index: _id_ dup key: { : ObjectId('5c50544501000001002b097d') }' (code = 11000)].
+    //ScalaTestFailureLocation: integration.repositories.SubmissionRepositorySpec$$anonfun$1$$anonfun$apply$mcV$sp$2 at (SubmissionRepositorySpec.scala:58)
+    //org.scalatest.exceptions.TestFailedException: The future returned an exception of type: reactivemongo.api.commands.LastError, with message: DatabaseException['E11000 duplicate key error collection: customs-declare-imports.submissions index: _id_ dup key: { : ObjectId('5c50544501000001002b097d') }' (code = 11000)].
   }
 }

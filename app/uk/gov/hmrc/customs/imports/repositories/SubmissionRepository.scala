@@ -18,13 +18,13 @@ package uk.gov.hmrc.customs.imports.repositories
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.libs.json.JsString
+import play.api.libs.json.{JsString, JsValue, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.imports.models.Submission
+import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
-import uk.gov.hmrc.mongo.{AtomicUpdate, ReactiveRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,40 +35,28 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
       mc.mongoConnector.db,
       Submission.formats,
       objectIdFormats
-    ) with AtomicUpdate[Submission] {
+    ) {
 
   override def indexes: Seq[Index] = Seq(
     Index(Seq("eori" -> IndexType.Ascending), name = Some("eoriIdx")),
-    Index(Seq("conversationId" -> IndexType.Ascending), unique = true, name = Some("conversationIdIdx")),
-    Index(Seq("lrn" -> IndexType.Ascending), name = Some("lrnIdx"))
+    Index(Seq("localReferenceNumber" -> IndexType.Ascending), name = Some("lrnIdx"))
   )
 
   def findByEori(eori: String): Future[Seq[Submission]] = find("eori" -> JsString(eori))
 
-  def getByConversationId(conversationId: String): Future[Option[Submission]] =
-    find("conversationId" -> JsString(conversationId)).map(_.headOption)
-
   def getByEoriAndMrn(eori: String, mrn: String): Future[Option[Submission]] =
     find("eori" -> JsString(eori), "mrn" -> JsString(mrn)).map(_.headOption)
 
-  override def isInsertion(newRecordId: BSONObjectID, oldRecord: Submission): Boolean = newRecordId.equals(oldRecord.id)
+  def updateSubmission(submission: Submission) = {
+    val finder = Json.obj( "eori" -> submission.eori, "localReferenceNumber" -> submission.localReferenceNumber)
 
-  def save(submission: Submission): Future[Boolean] = insert(submission).map { res =>
-    if (!res.ok)
-    // $COVERAGE-OFF$Trivial
-      Logger.error("Error during inserting submission result " + res.writeErrors.mkString("--"))
-    // $COVERAGE-ON$
-    res.ok
-  }
-
-  def updateSubmission(submission: Submission): Future[Boolean] = {
-    val finder = BSONDocument("_id" -> submission.id, "conversationId" -> submission.conversationId)
-
-    val modifier = BSONDocument(
+    val modifier =Json.obj(
       "$set" ->
-        BSONDocument("mrn" -> submission.mrn)
+        Json.obj("mrn" -> submission.mrn)
     )
-    atomicUpdate(finder, modifier).map(res => res.get.writeResult.ok)
+    findAndUpdate(finder, modifier, upsert = true)
+      .map(_.lastError.exists(_.updatedExisting))
   }
+
 
 }

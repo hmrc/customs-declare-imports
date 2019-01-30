@@ -19,14 +19,15 @@ package integration.repositories
 import org.scalatest.BeforeAndAfterEach
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.customs.imports.repositories.NotificationsRepository
+import play.api.libs.json.JsString
+import uk.gov.hmrc.customs.imports.models.SubmissionAction
+import uk.gov.hmrc.customs.imports.repositories.SubmissionActionRepository
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-
-class NotificationsRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfterEach with ImportsTestData {
+class SubmissionActionRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfterEach with ImportsTestData {
 
   override protected def afterEach(): Unit = {
     super.afterEach()
@@ -35,12 +36,20 @@ class NotificationsRepositorySpec extends CustomsImportsBaseSpec with BeforeAndA
 
   override lazy val app: Application = GuiceApplicationBuilder().build()
 
-  val repo: NotificationsRepository = component[NotificationsRepository]
+  val repo: SubmissionActionRepository = component[SubmissionActionRepository]
 
-  "NotificationsRepository" should {
-    "save notification with eori, conversationId and timestamp" in {
-      repo.insert(notification).futureValue.ok shouldBe true
+  "SubmissionActionRepository" should {
+    "save submissionAction then return true" in {
+      val actionToPersist = submissionAction
+      await(repo.insert(actionToPersist)).ok shouldBe true
 
+      val foundAction: Seq[SubmissionAction] = await(repo.find("conversationId" -> JsString(conversationId)))
+
+      foundAction.size shouldBe 1
+      foundAction(0).submissionId shouldBe actionToPersist.submissionId
+      foundAction(0).conversationId shouldBe conversationId
+      foundAction(0).dateTimeSent should (be >= before).and(be <= System.currentTimeMillis())
     }
   }
+
 }

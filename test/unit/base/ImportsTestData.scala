@@ -22,6 +22,7 @@ import org.joda.time.DateTime
 import play.api.http.{ContentTypes, HeaderNames}
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE}
 import play.api.mvc.Codec
+import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.wco.dec.{Declaration, MetaData, Response}
@@ -41,14 +42,14 @@ trait ImportsTestData {
   val eori: String = randomString(EIGHT)
   val lrn: String = randomString(SEVENTY)
   val mrn: String = randomString(SIXTEEN)
-  val conversationId: String = UUID.randomUUID.toString
   val ducr: String = randomString(SIXTEEN)
 
   val before: Long = System.currentTimeMillis()
-  val submission = Submission(eori, conversationId, lrn, Some(mrn))
-  val submissionData: SubmissionData = SubmissionData.buildSubmissionData(submission, 0)
+  val submission = Submission(eori, lrn, Some(mrn))
+  val conversationId = "58494f63-5749-4a62-8193-0452fdc7263b"
+  val submissionAction = SubmissionAction(BSONObjectID.generate(), conversationId)
+
   val seqSubmissions: Seq[Submission] = Seq(submission)
-  val seqSubmissionData: Seq[SubmissionData] = Seq(submissionData)
 
   val now: DateTime = DateTime.now
   val response1: Seq[Response] = Seq(Response(functionCode = Random.nextInt(), functionalReferenceId = Some("123")))

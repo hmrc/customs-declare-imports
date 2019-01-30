@@ -17,29 +17,27 @@
 package uk.gov.hmrc.customs.imports.repositories
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
-import play.api.libs.json.JsString
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.customs.imports.models.DeclarationNotification
-import uk.gov.hmrc.mongo.ReactiveRepository
+import uk.gov.hmrc.customs.imports.models.{Submission, SubmissionAction}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
+import uk.gov.hmrc.mongo.{AtomicUpdate, ReactiveRepository}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 @Singleton
-class NotificationsRepository @Inject()(mc: ReactiveMongoComponent)(implicit ec: ExecutionContext)
-    extends ReactiveRepository[DeclarationNotification, BSONObjectID](
-      "importNotifications",
-      mc.mongoConnector.db,
-      DeclarationNotification.exportsNotificationFormats,
-      objectIdFormats
-    ) {
+class SubmissionActionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: ExecutionContext)
+  extends ReactiveRepository[SubmissionAction, BSONObjectID](
+    "submissionActions",
+    mc.mongoConnector.db,
+    SubmissionAction.formats,
+    objectIdFormats
+  ) {
 
   override def indexes: Seq[Index] = Seq(
-    Index(Seq("eori" -> IndexType.Ascending), name = Some("eoriIdx")),
-    Index(Seq("conversationId" -> IndexType.Ascending), unique = true, name = Some("conversationIdIdx"))
+    Index(Seq("conversationId" -> IndexType.Ascending), unique = true, name = Some("conversationIdx")),
+    Index(Seq("submissionId" -> IndexType.Ascending), name = Some("submissionIdx"))
   )
 
 }
