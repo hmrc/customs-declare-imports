@@ -16,27 +16,44 @@
 
 package integration.repositories
 
+import akka.stream.Materializer
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.concurrent.Execution.Implicits
 import uk.gov.hmrc.customs.imports.models.Submission
 import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
+import uk.gov.hmrc.play.test.UnitSpec
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
-class SubmissionRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfterEach
-  with ImportsTestData {
+class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
+  with ImportsTestData with GuiceOneAppPerSuite with MockitoSugar with ScalaFutures{
 
   override protected def afterEach(): Unit = {
     super.afterEach()
     Await.result(repo.removeAll(), 1 second)
   }
+  protected def component[T: ClassTag]: T = app.injector.instanceOf[T]
 
   override lazy val app: Application = GuiceApplicationBuilder().build()
   val repo: SubmissionRepository = component[SubmissionRepository]
+
+
+  implicit val mat: Materializer = app.materializer
+
+  implicit val ec: ExecutionContext = Implicits.defaultContext
+
+  implicit lazy val patience: PatienceConfig =
+    PatienceConfig(timeout = 5.seconds, interval = 50.milliseconds) // be more patient than the default
+
 
   "SubmissionRepository" should {
     "save submission, return true. Persisted submission should be correct" in {
@@ -90,7 +107,7 @@ class SubmissionRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfte
       val submissionToUpdate = await(repo.getByEoriAndMrn(eori, mrn)).get
       val updatedSubmission = submissionToUpdate.copy(mrn = Some(mrn + 123))
 
-      await(repo.updateSubmission(updatedSubmission)) shouldBe true
+      await(repo.updateSubmission(updatedSubmission))
 
       val newSubmission = await(repo.getByEoriAndMrn(eori, mrn + 123)).get
 

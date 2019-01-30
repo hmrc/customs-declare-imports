@@ -62,7 +62,6 @@ trait CustomsImportsBaseSpec
     GuiceApplicationBuilder()
       .overrides(
         bind[AuthConnector].to(mockAuthConnector),
-
         bind[SubmissionRepository].to(mockSubmissionRepository),
         bind[NotificationsRepository].to(mockNotificationsRepository),
         bind[CustomsDeclarationsConnector].to(mockDeclarationsApiConnector),

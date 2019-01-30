@@ -33,13 +33,11 @@ class SubmissionActionRepository @Inject()(implicit mc: ReactiveMongoComponent, 
     mc.mongoConnector.db,
     SubmissionAction.formats,
     objectIdFormats
-  ) with AtomicUpdate[Submission] {
+  ) {
 
   override def indexes: Seq[Index] = Seq(
     Index(Seq("conversationId" -> IndexType.Ascending), unique = true, name = Some("conversationIdx")),
     Index(Seq("submissionId" -> IndexType.Ascending), name = Some("submissionIdx"))
   )
-
-  override def isInsertion(newRecordId: BSONObjectID, oldRecord: Submission): Boolean = newRecordId.equals(oldRecord.id)
 
 }

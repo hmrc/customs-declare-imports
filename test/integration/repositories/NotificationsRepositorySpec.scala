@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.imports.repositories
+package integration.repositories
 
 import org.scalatest.BeforeAndAfterEach
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.customs.imports.repositories.NotificationsRepository
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 
 class NotificationsRepositorySpec extends CustomsImportsBaseSpec with BeforeAndAfterEach with ImportsTestData {
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    repo.removeAll()
+    Await.result(repo.removeAll(), 1 second)
   }
 
   override lazy val app: Application = GuiceApplicationBuilder().build()
@@ -36,25 +39,8 @@ class NotificationsRepositorySpec extends CustomsImportsBaseSpec with BeforeAndA
 
   "NotificationsRepository" should {
     "save notification with eori, conversationId and timestamp" in {
-      repo.save(notification).futureValue shouldBe true
+      repo.insert(notification).futureValue.ok shouldBe true
 
-      // we can now display a list of all the declarations belonging to the current user, searching by EORI
-      val foundDeclarationNotification = repo.findByEori(eori).futureValue
-      foundDeclarationNotification.length shouldBe 1
-      foundDeclarationNotification.head.eori shouldBe eori
-      foundDeclarationNotification.head.conversationId shouldBe conversationId
-
-      foundDeclarationNotification.head.dateTimeReceived shouldBe now
-
-      // we can also retrieve the submission individually by conversation Id
-      val declarationNotification1 = await(repo.getByConversationId(conversationId)).get
-      declarationNotification1.eori shouldBe eori
-      declarationNotification1.conversationId shouldBe conversationId
-
-      // or we can retrieve it by eori and conversationId
-      val declarationNotification2 = await(repo.getByEoriAndConversationId(eori, conversationId)).get
-      declarationNotification2.eori shouldBe eori
-      declarationNotification2.conversationId shouldBe conversationId
     }
   }
 }

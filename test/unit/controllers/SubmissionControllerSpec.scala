@@ -24,11 +24,9 @@ import play.api.http.ContentTypes
 import play.api.mvc.Codec
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import reactivemongo.api.commands.WriteResult
 import uk.gov.hmrc.auth.core.{InsufficientConfidenceLevel, InsufficientEnrolments}
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsResponse
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
-import uk.gov.hmrc.customs.imports.models.Submission
 import uk.gov.hmrc.http.HeaderCarrier
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
