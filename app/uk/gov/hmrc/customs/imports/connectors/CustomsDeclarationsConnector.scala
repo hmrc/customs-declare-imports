@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.imports.connectors
 
 import com.google.inject.Inject
 import javax.inject.Singleton
+import play.api.Logger
 import play.api.http.{ContentTypes, HeaderNames, Status}
 import play.api.mvc.Codec
 import uk.gov.hmrc.customs.imports.config.AppConfig
@@ -46,27 +47,30 @@ class CustomsDeclarationsConnector @Inject()(appConfig: AppConfig,
 
   //noinspection ConvertExpressionToSAM
   private implicit val responseReader: HttpReads[CustomsDeclarationsResponse] = new HttpReads[CustomsDeclarationsResponse] {
-    override def read(method: String, url: String, response: HttpResponse): CustomsDeclarationsResponse = response.status / 100 match {
-      case 4 => throw Upstream4xxResponse(
-        message = "Invalid request made to Customs Declarations API",
-        upstreamResponseCode = response.status,
-        reportAs = Status.INTERNAL_SERVER_ERROR,
-        headers = response.allHeaders
-      )
-      case 5 => throw Upstream5xxResponse(
-        message = "Customs Declarations API unable to service request",
-        upstreamResponseCode = response.status,
-        reportAs = Status.INTERNAL_SERVER_ERROR
-      )
-      case _ => CustomsDeclarationsResponse(
-        response.header("X-Conversation-ID").getOrElse(
-          throw Upstream5xxResponse(
-            message = "Conversation ID missing from Customs Declaration API response",
-            upstreamResponseCode = response.status,
-            reportAs = Status.INTERNAL_SERVER_ERROR
+    override def read(method: String, url: String, response: HttpResponse): CustomsDeclarationsResponse = {
+      Logger.debug(s"Response: ${response.status} => ${response.body}")
+      response.status / 100 match {
+        case 4 => throw Upstream4xxResponse(
+          message = "Invalid request made to Customs Declarations API",
+          upstreamResponseCode = response.status,
+          reportAs = Status.INTERNAL_SERVER_ERROR,
+          headers = response.allHeaders
+        )
+        case 5 => throw Upstream5xxResponse(
+          message = "Customs Declarations API unable to service request",
+          upstreamResponseCode = response.status,
+          reportAs = Status.INTERNAL_SERVER_ERROR
+        )
+        case _ => CustomsDeclarationsResponse(
+          response.header("X-Conversation-ID").getOrElse(
+            throw Upstream5xxResponse(
+              message = "Conversation ID missing from Customs Declaration API response",
+              upstreamResponseCode = response.status,
+              reportAs = Status.INTERNAL_SERVER_ERROR
+            )
           )
         )
-      )
+      }
     }
   }
 
