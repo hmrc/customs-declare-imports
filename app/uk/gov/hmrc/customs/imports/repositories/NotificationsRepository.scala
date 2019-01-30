@@ -31,7 +31,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class NotificationsRepository @Inject()(mc: ReactiveMongoComponent)(implicit ec: ExecutionContext)
     extends ReactiveRepository[DeclarationNotification, BSONObjectID](
-      "exportNotifications",
+      "importNotifications",
       mc.mongoConnector.db,
       DeclarationNotification.exportsNotificationFormats,
       objectIdFormats

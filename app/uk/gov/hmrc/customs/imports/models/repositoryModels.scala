@@ -25,7 +25,7 @@ case class Submission(
                        eori: String,
                        localReferenceNumber: String,
                        mrn: Option[String] = None,
-                       submittedTimestamp: Long = System.currentTimeMillis(),
+                       submittedDateTime: Long = System.currentTimeMillis(),
                        id: BSONObjectID = BSONObjectID.generate()
                      )
 
@@ -33,5 +33,17 @@ object Submission {
   implicit val objectIdFormats: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats
   implicit val formats: Format[Submission] = mongoEntity {
     Json.format[Submission]
+  }
+}
+
+case class SubmissionAction( submissionId : BSONObjectID,
+                             conversationId: String,
+                             dateTimeSent: Long = System.currentTimeMillis(),
+                             id: BSONObjectID = BSONObjectID.generate()
+                           )
+object SubmissionAction {
+  implicit val objectIdFormats: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats
+  implicit val formats: Format[SubmissionAction] = mongoEntity {
+    Json.format[SubmissionAction]
   }
 }

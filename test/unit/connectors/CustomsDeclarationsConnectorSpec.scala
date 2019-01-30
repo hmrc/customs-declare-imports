@@ -57,7 +57,7 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
 
   val aRandomSubmitDeclaration: MetaData = randomSubmitDeclaration
 
-  def acceptedResponse(maybeConversationId: Option[String]) = {
+  def acceptedResponse(maybeConversationId: Option[String]): AnyRef with HttpResponse = {
     val headers = maybeConversationId.fold(Map(""->Seq(""))){conversationId =>
       Map(XConversationIdName -> Seq(conversationId))}
     HttpResponse(
@@ -97,19 +97,19 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
   "submit import declaration" should {
 
     "specify X-Client-ID in request headers" in simpleAcceptedSubmissionScenario(declarantEoriValue, declarantLrnValue, aRandomSubmitDeclaration.toXml) { (_, http, _, _, _) =>
-      http.requests.head.headers("X-Client-ID") must be(appConfig.developerHubClientId)
+      http.requests.head.headers("X-Client-ID") shouldBe appConfig.developerHubClientId
     }
 
     "specify correct Accept value in request headers" in simpleAcceptedSubmissionScenario(declarantEoriValue, declarantLrnValue, aRandomSubmitDeclaration.toXml) { (_, http, _, _, _) =>
-      http.requests.head.headers(HeaderNames.ACCEPT) must be(acceptContentType)
+      http.requests.head.headers(HeaderNames.ACCEPT) shouldBe acceptContentType
     }
 
     "specify Content-Type as XML in request headers" in simpleAcceptedSubmissionScenario(declarantEoriValue, declarantLrnValue, aRandomSubmitDeclaration.toXml) { (_, http, _, _, _) =>
-      http.requests.head.headers(HeaderNames.CONTENT_TYPE) must be(ContentTypes.XML)
+      http.requests.head.headers(HeaderNames.CONTENT_TYPE) shouldBe ContentTypes.XML
     }
 
     "send metadata as XML in request body" in simpleAcceptedSubmissionScenario(declarantEoriValue, declarantLrnValue, aRandomSubmitDeclaration.toXml) { (_, http, _, _, _) =>
-      http.requests.head.body must be(aRandomSubmitDeclaration.toXml.mkString)
+      http.requests.head.body shouldBe aRandomSubmitDeclaration.toXml.mkString
     }
 
 //    "save successfully submitted declaration" in simpleAcceptedSubmissionScenario(aRandomSubmitDeclaration) { (_, _, expectation, repo, _) =>
@@ -128,7 +128,7 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
               submitImportDeclaration(declarantEoriValue,  aRandomSubmitDeclaration.toXml).
               failed.futureValue.
               asInstanceOf[GatewayTimeoutException].
-              message must be(http.gatewayTimeoutMessage(HttpVerbs.POST, submitUrl, ex))
+              message shouldBe http.gatewayTimeoutMessage(HttpVerbs.POST, submitUrl, ex)
           }
         }
       }
@@ -143,7 +143,7 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
               submitImportDeclaration(declarantEoriValue, aRandomSubmitDeclaration.toXml).
               failed.futureValue.
               asInstanceOf[BadGatewayException].
-              message must be(http.badGatewayMessage(HttpVerbs.POST, submitUrl, ex))
+              message shouldBe http.badGatewayMessage(HttpVerbs.POST, submitUrl, ex)
           }
         }
       }
@@ -173,8 +173,8 @@ class CustomsDeclarationsConnectorSpec extends CustomsImportsBaseSpec with Impor
         withCustomsDeclarationsConnector(http, repo) { connector =>
           val ex = connector.submitImportDeclaration(declarantEoriValue,  aRandomSubmitDeclaration.toXml).
             failed.futureValue.asInstanceOf[Upstream5xxResponse]
-          ex.upstreamResponseCode must be(expectedStatus)
-          ex.reportAs must be(expectedEndStatus)
+          ex.upstreamResponseCode shouldBe expectedStatus
+          ex.reportAs shouldBe expectedEndStatus
         }
       }
     }
@@ -186,8 +186,8 @@ def simple4xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: I
       withCustomsDeclarationsConnector(http, repo) { connector =>
         val ex = connector.submitImportDeclaration(declarantEoriValue, aRandomSubmitDeclaration.toXml).
           failed.futureValue.asInstanceOf[Upstream4xxResponse]
-        ex.upstreamResponseCode must be(expectedStatus)
-        ex.reportAs must be(expectedEndStatus)
+        ex.upstreamResponseCode shouldBe expectedStatus
+        ex.reportAs shouldBe expectedEndStatus
       }
     }
   }
@@ -199,8 +199,8 @@ def simple4xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: I
         withCustomsDeclarationsConnector(http, repo) { connector =>
           val ex = connector.submitImportDeclaration(declarantEoriValue, aRandomSubmitDeclaration.toXml).
             failed.futureValue.asInstanceOf[Upstream5xxResponse]
-          ex.upstreamResponseCode must be(expectedStatus)
-          ex.reportAs must be(expectedEndStatus)
+          ex.upstreamResponseCode shouldBe expectedStatus
+          ex.reportAs shouldBe expectedEndStatus
         }
       }
     }

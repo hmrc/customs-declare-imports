@@ -36,25 +36,25 @@ class NotificationsRepositorySpec extends CustomsImportsBaseSpec with BeforeAndA
 
   "NotificationsRepository" should {
     "save notification with eori, conversationId and timestamp" in {
-      repo.save(notification).futureValue must be(true)
+      repo.save(notification).futureValue shouldBe true
 
       // we can now display a list of all the declarations belonging to the current user, searching by EORI
       val foundDeclarationNotification = repo.findByEori(eori).futureValue
-      foundDeclarationNotification.length must be(1)
-      foundDeclarationNotification.head.eori must be(eori)
-      foundDeclarationNotification.head.conversationId must be(conversationId)
+      foundDeclarationNotification.length shouldBe 1
+      foundDeclarationNotification.head.eori shouldBe eori
+      foundDeclarationNotification.head.conversationId shouldBe conversationId
 
-      foundDeclarationNotification.head.dateTimeReceived must be(now)
+      foundDeclarationNotification.head.dateTimeReceived shouldBe now
 
       // we can also retrieve the submission individually by conversation Id
-      val declarationNotification1 = repo.getByConversationId(conversationId).futureValue.value
-      declarationNotification1.eori must be(eori)
-      declarationNotification1.conversationId must be(conversationId)
+      val declarationNotification1 = await(repo.getByConversationId(conversationId)).get
+      declarationNotification1.eori shouldBe eori
+      declarationNotification1.conversationId shouldBe conversationId
 
       // or we can retrieve it by eori and conversationId
-      val declarationNotification2 = repo.getByEoriAndConversationId(eori, conversationId).futureValue.value
-      declarationNotification2.eori must be(eori)
-      declarationNotification2.conversationId must be(conversationId)
+      val declarationNotification2 = await(repo.getByEoriAndConversationId(eori, conversationId)).get
+      declarationNotification2.eori shouldBe eori
+      declarationNotification2.conversationId shouldBe conversationId
     }
   }
 }

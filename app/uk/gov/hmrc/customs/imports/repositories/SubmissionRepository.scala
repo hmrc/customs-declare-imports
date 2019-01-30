@@ -50,14 +50,6 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
 
   override def isInsertion(newRecordId: BSONObjectID, oldRecord: Submission): Boolean = newRecordId.equals(oldRecord.id)
 
-  def save(submission: Submission): Future[WriteResult] = insert(submission).map { res =>
-    if (!res.ok) {
-      // $COVERAGE-OFF$Trivial
-      Logger.error("Error during inserting submission result " + res.writeErrors.mkString("--"))
-      // $COVERAGE-ON$
-    }
-    res
-  }
 
   def updateSubmission(submission: Submission): Future[Boolean] = {
     val finder = BSONDocument("_id" -> submission.id, "eori" -> submission.eori, "localReferenceNumber" -> submission.localReferenceNumber)

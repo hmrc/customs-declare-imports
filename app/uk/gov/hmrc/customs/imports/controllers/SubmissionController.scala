@@ -80,7 +80,10 @@ class SubmissionController @Inject()(
 
 
   def handleDeclarationSubmit(eori: String, lrn: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Result] = {
-    importService.handleDeclarationSubmit(eori, lrn, xml)
+     importService.handleDeclarationSubmit(eori, lrn, xml).map(res => {
+       if(res){ Accepted
+       } else{ ErrorResponse.ErrorInternalServerError.XmlResult }
+     })
   }
 
 
