@@ -21,13 +21,11 @@ import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.mongoEntity
 
-case class Submission(
-                       eori: String,
+case class Submission( eori: String,
                        localReferenceNumber: String,
                        mrn: Option[String] = None,
                        submittedDateTime: Long = System.currentTimeMillis(),
-                       id: BSONObjectID = BSONObjectID.generate()
-                     )
+                       id: BSONObjectID = BSONObjectID.generate() )
 
 object Submission {
   implicit val objectIdFormats: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats
@@ -39,11 +37,23 @@ object Submission {
 case class SubmissionAction( submissionId : BSONObjectID,
                              conversationId: String,
                              dateTimeSent: Long = System.currentTimeMillis(),
-                             id: BSONObjectID = BSONObjectID.generate()
-                           )
+                             id: BSONObjectID = BSONObjectID.generate() )
+
 object SubmissionAction {
   implicit val objectIdFormats: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats
   implicit val formats: Format[SubmissionAction] = mongoEntity {
     Json.format[SubmissionAction]
+  }
+}
+
+case class SubmissionNotification( functionCode: Int,
+                                   conversationId: String,
+                                   dateTimeIssued: Long = System.currentTimeMillis(),
+                                   id: BSONObjectID = BSONObjectID.generate() )
+
+object SubmissionNotification {
+  implicit val objectIdFormats: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats
+  implicit val formats: Format[SubmissionNotification] = mongoEntity {
+    Json.format[SubmissionNotification]
   }
 }
