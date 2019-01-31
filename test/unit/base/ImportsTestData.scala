@@ -57,6 +57,9 @@ trait ImportsTestData {
 
   val notification = DeclarationNotification(now, conversationId, eori, None, DeclarationMetadata(), response1)
 
+  val functionCodeACK = 10
+  val submissionNotification = SubmissionNotification( functionCodeACK, conversationId)
+
   val submissionResponse = SubmitDeclarationResponse(eori, conversationId, lrn, Some(mrn))
 
   val declarantEoriValue: String = "ZZ123456789000"
