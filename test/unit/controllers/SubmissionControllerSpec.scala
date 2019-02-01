@@ -135,4 +135,12 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
   }
 
+  "POST /notify " should {
+    "return 200 OK" in {
+      val result = route(app, FakeRequest("POST", "/notify")).get
+
+      status(result) shouldBe OK
+    }
+  }
+
 }

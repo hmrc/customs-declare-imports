@@ -49,6 +49,9 @@ class SubmissionController @Inject()(
   }
 
 
+  def handleNotification(): Action[AnyContent] = Action {
+    Ok
+  }
 
   def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
    headerValidator.validateAndExtractHeaders match {
