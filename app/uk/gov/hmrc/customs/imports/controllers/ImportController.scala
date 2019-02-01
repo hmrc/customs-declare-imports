@@ -18,7 +18,7 @@ package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.mvc.{AnyContent, Request}
+import play.api.mvc._
 import uk.gov.hmrc.auth.core.retrieve.Retrievals._
 import uk.gov.hmrc.auth.core.{AuthorisedFunctions, _}
 import uk.gov.hmrc.customs.imports.models.{AuthorizedImportRequest, Eori, ValidatedHeadersRequest}
@@ -31,19 +31,15 @@ import scala.concurrent.{ExecutionContext, Future}
 class ImportController @Inject()(override val authConnector: AuthConnector)(implicit ec: ExecutionContext)
     extends BaseController with AuthorisedFunctions {
 
-    private def hasEnrolment(allEnrolments: Enrolments): Option[EnrolmentIdentifier] =
+  private def hasEnrolment(allEnrolments: Enrolments): Option[EnrolmentIdentifier] =
     allEnrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber"))
 
-
-  def authoriseWithEori[A](vpr: ValidatedHeadersRequest)
-                          (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Either[ErrorResponse, AuthorizedImportRequest]] = {
+  private def authoriseWithEori[A](implicit hc: HeaderCarrier, request: Request[A]): Future[Either[ErrorResponse, AuthorizedImportRequest[A]]] = {
     authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments){ enrolments =>
-      val eori = hasEnrolment(enrolments)
-        if(eori.isDefined) {
-          Future.successful(Right(AuthorizedImportRequest(vpr.localReferenceNumber, Eori(eori.get.value))))
-        } else {
-          Future.successful(Left(ErrorResponse.ErrorUnauthorized))
-        }
+      hasEnrolment(enrolments) match {
+        case Some(eori) => Future.successful(Right(AuthorizedImportRequest(Eori(eori.value), request)))
+        case _ => Future.successful(Left(ErrorResponse.ErrorUnauthorized))
+      }
     } recover {
       case _: InsufficientEnrolments =>
         Logger.warn(s"Unauthorised access for ${request.uri}")
@@ -57,6 +53,16 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
     }
   }
 
-
+  def authorisedAction[A](bodyParser: BodyParser[A])
+                         (body: AuthorizedImportRequest[A] => Future[Result]): Action[A] = Action.async(bodyParser) { implicit request =>
+      authoriseWithEori.flatMap {
+        case Right(authorisedRequest) =>
+          Logger.info(s"Authorised request for ${authorisedRequest.eori.value}")
+          body(authorisedRequest)
+        case Left(error) =>
+          Logger.error("Problems with Authorisation")
+          Future.successful(error.XmlResult)
+      }
+  }
 
 }

@@ -49,4 +49,8 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
     })
   }
 
+  def getSubmissions(eori: String) = {
+    submissionRepository.findByEori(eori)
+  }
+
 }

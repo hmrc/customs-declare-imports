@@ -57,3 +57,15 @@ object SubmissionNotification {
     Json.format[SubmissionNotification]
   }
 }
+
+case class DeclarationAction(dateTimeSent: Long, notifications: Seq[SubmissionNotification] = Seq.empty)
+
+object DeclarationAction {
+  implicit val formats = Json.format[DeclarationAction]
+}
+
+case class Declaration(eori: String, localReferenceNumber: String, submittedDateTime: Long, mrn: Option[String] = None, actions: Seq[DeclarationAction] = Seq.empty)
+
+object Declaration {
+  implicit val formats = Json.format[Declaration]
+}
