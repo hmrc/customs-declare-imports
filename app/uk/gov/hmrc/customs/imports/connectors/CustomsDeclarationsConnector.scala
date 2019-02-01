@@ -77,12 +77,15 @@ class CustomsDeclarationsConnector @Inject()(appConfig: AppConfig,
   private def onSuccess(resp: CustomsDeclarationsResponse): Future[CustomsDeclarationsResponse] = Future.successful(resp)
 
   private def doPost(uri: String, body: String, eori: String)
-                    (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =
+                    (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] = {
+
+    Logger.debug(s"Calling ${appConfig.customsDeclarationsBaseUrl}$uri")
     httpClient.POSTString[CustomsDeclarationsResponse](
       url = s"${appConfig.customsDeclarationsBaseUrl}$uri",
       body = body,
-      headers = hc.headers ++ headers(eori)
+      headers = headers(eori)
     )(responseReader, hc, ec)
+  }
 
   private def headers(eori: String): Seq[(String, String)] = Seq(
     "X-Client-ID" -> appConfig.developerHubClientId,
