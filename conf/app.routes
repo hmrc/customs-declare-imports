@@ -1,3 +1,5 @@
 # microservice specific routes
 
 POST      /declaration                                                          uk.gov.hmrc.customs.imports.controllers.SubmissionController.submitDeclaration()
+
+POST      /notify                                                               uk.gov.hmrc.customs.imports.controllers.NotificationController.handleNotification()

@@ -48,8 +48,6 @@ class SubmissionController @Inject()(
     processRequest
   }
 
-
-
   def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
    headerValidator.validateAndExtractHeaders match {
      case Right(vhr) =>
