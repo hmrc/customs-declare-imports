@@ -17,6 +17,7 @@
 package uk.gov.hmrc.customs.imports.config
 
 import com.typesafe.config.{Config, ConfigFactory}
+import java.util.UUID
 import org.scalatest.mockito.MockitoSugar
 import play.api.{Configuration, Environment, Mode}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -50,7 +51,7 @@ class AppConfigSpec extends UnitSpec with MockitoSugar {
       configService.customsDeclarationsBaseUrl shouldBe "http://remotedec-api:6000"
     }
 
-    "throw an exception when configuration is invalid" in {
+    "throw an exception when mandatory configuration is invalid" in {
       val configService: AppConfig = customsConfigService(emptyServicesConfiguration)
 
       val caught1: RuntimeException = intercept[RuntimeException](configService.customsDeclarationsBaseUrl)
@@ -61,6 +62,23 @@ class AppConfigSpec extends UnitSpec with MockitoSugar {
 
       val caught4: RuntimeException = intercept[RuntimeException](configService.submitImportDeclarationUri)
       caught4.getMessage shouldBe "Could not find config key 'microservice.services.customs-declarations.submit-uri'"
+    }
+
+    "developerHubClientId" should {
+      val appName = "customs-declare-imports"
+      val clientId = UUID.randomUUID.toString
+
+      "return the configured value when explicitly set" in {
+        val configService = customsConfigService(Configuration("appName" -> appName, "microservice.services.customs-declarations.client-id" -> clientId))
+
+        configService.developerHubClientId shouldBe clientId
+      }
+
+      "return the app name when no explicit config exists" in {
+        val configService = customsConfigService(Configuration("appName" -> appName))
+
+        configService.developerHubClientId shouldBe appName
+      }
     }
   }
 
