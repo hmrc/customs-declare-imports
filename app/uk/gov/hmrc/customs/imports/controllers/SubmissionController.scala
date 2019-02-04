@@ -49,10 +49,6 @@ class SubmissionController @Inject()(appConfig: AppConfig,
     importService.getSubmissions(request.eori.value).map(submissions => Ok(Json.toJson(submissions)))
   }
 
-  def handleNotification(): Action[AnyContent] = Action {
-    Ok
-  }
-
   private def processRequest()(implicit request: AuthorizedImportRequest[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
     headerValidator.validateAndExtractHeaders match {
       case Right(vhr) => request.body.asXml match {

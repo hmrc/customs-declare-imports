@@ -73,13 +73,14 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(Some(submissionAction)))
       when(mockSubmissionRepo.updateSubmission(any[Submission])).thenReturn(Future.successful(true))
       when(mockWriteResult.ok).thenReturn(true)
-      when(mockSubmissionNotificationRepo.insert(any())(any())).thenReturn(Future.successful(mockWriteResult))
+      when(mockSubmissionNotificationRepo.insert(any[SubmissionNotification])(any[ExecutionContext])).thenReturn(Future.successful(mockWriteResult))
 
-      val result: Unit = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
 
       verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
       verify(mockSubmissionRepo, times(1)).findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])
-      verify(mockSubmissionNotificationRepo, times(1)).insert(any())(any())
+      verify(mockSubmissionNotificationRepo, times(1)).insert(any[SubmissionNotification])(any[ExecutionContext])
+      result should be (true)
 
     }
 
