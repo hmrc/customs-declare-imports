@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.imports.services
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
 import uk.gov.hmrc.customs.imports.models.{Declaration, Submission, SubmissionAction, SubmissionNotification}
 import uk.gov.hmrc.customs.imports.repositories.{SubmissionActionRepository, SubmissionNotificationRepository, SubmissionRepository}
@@ -55,16 +56,6 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
   }
 
 
-  private def handlePersistNotification(functionCode: Int, conversationId: String, updateResult: Boolean) = {
-    if (!updateResult) {
-      Logger.error(s"unable to updateSubmission with received MRN conversationID:$conversationId")
-      Future.successful(false)
-    } else {
-      submissionNotificationRepository.insert(SubmissionNotification(functionCode, conversationId)).map(
-        writeResult => writeResult.ok
-      )
-    }
-  }
 
   def handleNotificationReceived(conversationId: String,  xml: NodeSeq): Future[Boolean] = {
     val functionCode = {
@@ -74,22 +65,55 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
 
     for {
       submissionId <- findSubmissionIdByConversationId(conversationId)
-      submission <- submissionRepository.findById(submissionId)
+      submission <- findSubmissionBySubmissionId(submissionId)
       updateResult <- updateSubmissionWithMrn(mrn, submission)
-      persistNotificationResult <- handlePersistNotification(functionCode, conversationId, updateResult)
+      persistNotificationResult <- handlePersistNotification(functionCode, conversationId, submission, updateResult)
     } yield persistNotificationResult
 
   }
 
-  private def updateSubmissionWithMrn(mrn: String, submission: Option[Submission]) ={
+  private def findSubmissionBySubmissionId(mayBeSubmissionid : Option[BSONObjectID]): Future[Option[Submission]] = {
+    mayBeSubmissionid match {
+      case Some(submissionId: BSONObjectID) => {
+        submissionRepository.findById(submissionId)
+      }
+      case None => Future.successful(None)
+    }
+  }
+
+
+  private def updateSubmissionWithMrn(mrn: String, submission: Option[Submission]): Future[Boolean] ={
     submission.fold(Future.successful(false)){ submission =>
       submissionRepository.updateSubmission(submission.copy(mrn = Some(mrn)))
     }
   }
 
-  private def findSubmissionIdByConversationId(conversationId: String) ={
-    submissionActionRepository.findByConversationId(conversationId).map(
-      _.get.submissionId)
+  private def findSubmissionIdByConversationId(conversationId: String): Future[Option[BSONObjectID]] ={
+    submissionActionRepository.findByConversationId(conversationId)
+      .map(submissionActionOption => {
+            submissionActionOption match {
+              case Some(submissionAction) => Some(submissionAction.submissionId)
+              case None => None
+            }
+        })
+  }
+
+
+  private def handlePersistNotification(functionCode: Int,
+                                        conversationId: String,
+                                        submission: Option[Submission],
+                                        updateResult: Boolean): Future[Boolean] = {
+    if (!updateResult) {
+      Logger.error(s"unable to updateSubmission with received MRN conversationID:$conversationId")
+
+    }
+    submission match {
+      case Some(submission) =>  submissionNotificationRepository.insert(SubmissionNotification(functionCode, conversationId)).map(
+        writeResult => writeResult.ok
+      )
+      case None => Future.successful(false)
+    }
+
   }
 
 }

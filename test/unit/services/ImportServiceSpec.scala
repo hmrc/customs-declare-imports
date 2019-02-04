@@ -39,7 +39,8 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
   trait SetUp {
     val mockSubmissionRepo: SubmissionRepository = mock[SubmissionRepository]
     val mockSubmissionActionRepo: SubmissionActionRepository = mock[SubmissionActionRepository]
-    val mockSubmissionNotificationRepo: SubmissionNotificationRepository = mock[SubmissionNotificationRepository](withSettings().verboseLogging())
+    val mockSubmissionNotificationRepo: SubmissionNotificationRepository = mock[SubmissionNotificationRepository]
+    //(withSettings().verboseLogging())
     val mockCustomsDeclarationsConnector: CustomsDeclarationsConnector = mock[CustomsDeclarationsConnector]
     implicit val hc: HeaderCarrier = mock[HeaderCarrier]
     val testObj = new ImportService(mockSubmissionRepo,
@@ -83,6 +84,50 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       result should be (true)
 
     }
+
+    "return false and do not save notification when submissionAction does not exist" in new SetUp() {
+
+      when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(None))
+
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
+
+      verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
+      verifyZeroInteractions(mockSubmissionRepo)
+      verifyZeroInteractions(mockSubmissionNotificationRepo)
+      result should be (false)
+
+    }
+
+    "return false and do not save notification when submission does not exist" in new SetUp() {
+      when(mockSubmissionRepo.findById(any[BSONObjectID],any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(None))
+      when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(Some(submissionAction)))
+
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
+
+      verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
+      verify(mockSubmissionRepo, times(1)).findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])
+      verifyZeroInteractions(mockSubmissionNotificationRepo)
+      result should be (false)
+
+    }
+
+    "save notification in repository even when update submission fails" in new SetUp() {
+      val mockWriteResult: WriteResult = mock[WriteResult]
+      when(mockSubmissionRepo.findById(any[BSONObjectID],any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(Some(submissionNoMrn)))
+      when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(Some(submissionAction)))
+      when(mockSubmissionRepo.updateSubmission(any[Submission])).thenReturn(Future.successful(false))
+      when(mockWriteResult.ok).thenReturn(true)
+      when(mockSubmissionNotificationRepo.insert(any[SubmissionNotification])(any[ExecutionContext])).thenReturn(Future.successful(mockWriteResult))
+
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
+
+      verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
+      verify(mockSubmissionRepo, times(1)).findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])
+      verify(mockSubmissionNotificationRepo, times(1)).insert(any[SubmissionNotification])(any[ExecutionContext])
+      result should be (true)
+
+    }
+
 
 
   }
