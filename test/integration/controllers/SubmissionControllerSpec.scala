@@ -28,7 +28,7 @@ import reactivemongo.api.ReadPreference
 import reactivemongo.api.commands.{DefaultWriteResult, WriteResult}
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames.XConversationIdName
-import uk.gov.hmrc.customs.imports.models.Submission
+import uk.gov.hmrc.customs.imports.models.{Declaration, Submission}
 import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -233,7 +233,7 @@ def simple4xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: I
     override def findAll(readPreference: ReadPreference = ReadPreference.primaryPreferred)
                         (implicit ec: ExecutionContext): Future[List[Submission]] = Future.successful(inserted.toList)
 
-    override def findByEori(eori: String): Future[Seq[Submission]] = throw new IllegalArgumentException("Unexpected call")
+    override def findByEori(eori: String): Future[Seq[Declaration]] = throw new IllegalArgumentException("Unexpected call")
 
     override def getByEoriAndMrn(eori: String, mrn: String): Future[Option[Submission]] = throw new IllegalArgumentException("Unexpected call")
 

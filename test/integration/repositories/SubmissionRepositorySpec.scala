@@ -17,6 +17,7 @@
 package integration.repositories
 
 import akka.stream.Materializer
+import java.util.UUID
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -24,14 +25,14 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.concurrent.Execution.Implicits
-import uk.gov.hmrc.customs.imports.models.Submission
-import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
+import uk.gov.hmrc.customs.imports.models._
+import uk.gov.hmrc.customs.imports.repositories._
 import uk.gov.hmrc.play.test.UnitSpec
-import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
+import unit.base.ImportsTestData
 
-import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
 import scala.reflect.ClassTag
 
 class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
@@ -39,13 +40,17 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    Await.result(repo.removeAll(), 1 second)
+    await(repo.removeAll())
+    await(actionRepo.removeAll())
+    await(notificationRepo.removeAll())
   }
+
   protected def component[T: ClassTag]: T = app.injector.instanceOf[T]
 
-  override lazy val app: Application = GuiceApplicationBuilder().build()
+  override lazy val app: Application = GuiceApplicationBuilder().configure("metrics.enabled" -> false).build()
   val repo: SubmissionRepository = component[SubmissionRepository]
-
+  val actionRepo: SubmissionActionRepository = component[SubmissionActionRepository]
+  val notificationRepo: NotificationsRepository = component[NotificationsRepository]
 
   implicit val mat: Materializer = app.materializer
 
@@ -89,6 +94,46 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
 
       val result = repo.findByEori("someRandomString").futureValue
       result.isEmpty shouldBe true
+    }
+
+    "findByEori returns correct persisted submission with empty actions when there are no submissionActions" in {
+      await(repo.insert(submission))
+
+      val foundSubmission = await(repo.findByEori(eori)).head
+
+      foundSubmission.eori shouldBe eori
+      foundSubmission.mrn shouldBe Some(mrn)
+      foundSubmission.actions shouldBe Seq.empty
+    }
+
+    "findByEori returns correct persisted submission with nested actions and notifications when there are submissionActions with associated notifications" in {
+      await(repo.insert(submission))
+
+      val action1 = SubmissionAction(submission.id, UUID.randomUUID.toString)
+      val action2 = SubmissionAction(submission.id, UUID.randomUUID.toString)
+
+      val notification1 = SubmissionNotification(1, action1.conversationId)
+      val notification2 = SubmissionNotification(2, action1.conversationId)
+
+      await(actionRepo.insert(action1))
+      await(actionRepo.insert(action2))
+      await(actionRepo.insert(submissionAction))
+
+      await(notificationRepo.insert(notification1))
+      await(notificationRepo.insert(notification2))
+
+      val foundSubmission = await(repo.findByEori(eori)).head
+
+      foundSubmission.eori shouldBe eori
+      foundSubmission.mrn shouldBe Some(mrn)
+
+      foundSubmission.actions.length shouldBe 2
+      foundSubmission.actions.head.dateTimeSent shouldBe action1.dateTimeSent
+      foundSubmission.actions.head.notifications.head.functionCode shouldBe notification1.functionCode
+      foundSubmission.actions.head.notifications.last.functionCode shouldBe notification2.functionCode
+
+      foundSubmission.actions.last.dateTimeSent shouldBe action2.dateTimeSent
+      foundSubmission.actions.last.notifications shouldBe Seq.empty
     }
 
     "getByEoriAndMrn returns the correct persisted submission " in {
