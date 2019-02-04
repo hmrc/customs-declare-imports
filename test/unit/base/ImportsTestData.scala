@@ -25,7 +25,7 @@ import play.api.mvc.Codec
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.http.NotFoundException
-import uk.gov.hmrc.wco.dec.{Declaration, MetaData, Response}
+import uk.gov.hmrc.wco.dec.{Declaration => WcoDeclaration, MetaData, Response}
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames._
 
 import scala.util.Random
@@ -56,7 +56,13 @@ trait ImportsTestData {
   val response1: Seq[Response] = Seq(Response(functionCode = Random.nextInt(), functionalReferenceId = Some("123")))
   val response2: Seq[Response] = Seq(Response(functionCode = Random.nextInt(), functionalReferenceId = Some("456")))
 
-  val notification = DeclarationNotification(now, conversationId, eori, None, DeclarationMetadata(), response1)
+  val cancelledDeclaration = Declaration(eori, "LRN1", now.minusDays(5), Some("MRN1"),
+    actions = Seq(
+      DeclarationAction(now.minusDays(2), notifications = Seq(DeclarationNotification(1, randomConversationId, now.minusDays(2)))),
+      DeclarationAction(now.minusDays(1), notifications = Seq(DeclarationNotification(2, randomConversationId, now.minusDays(1))))))
+  val unacknowledgedDeclaration = Declaration(eori, "LRN2", now.minusDays(2), None,
+    actions = Seq(DeclarationAction(now.minusDays(2))))
+  val newlySubmittedDeclaration = Declaration(eori, "LRN3", now, None, Seq.empty)
 
   val functionCodeACK = 10
   val submissionNotification = SubmissionNotification( functionCodeACK, conversationId)
@@ -91,7 +97,7 @@ trait ImportsTestData {
     Valid_X_EORI_IDENTIFIER_HEADER
   )
 
-  def randomSubmitDeclaration: MetaData = MetaData(declaration = Option(Declaration(
+  def randomSubmitDeclaration: MetaData = MetaData(declaration = Option(WcoDeclaration(
     functionalReferenceId = Some(randomString(35))
   )))
 

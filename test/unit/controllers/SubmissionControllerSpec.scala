@@ -21,12 +21,14 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.http.ContentTypes
+import play.api.libs.json.Json
 import play.api.mvc.Codec
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.{InsufficientConfidenceLevel, InsufficientEnrolments}
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsResponse
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
+import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.http.HeaderCarrier
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
@@ -146,4 +148,66 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
     }
   }
 
+  "GET /declarations" should {
+    val request = FakeRequest("GET", "/declarations")
+
+    "return 200 Ok with list of declarations for the logged in user" in {
+      val submissions = Seq(cancelledDeclaration, newlySubmittedDeclaration, unacknowledgedDeclaration)
+
+      withAuthorizedUser()
+      when(mockImportService.getSubmissions(any[String])).thenReturn(Future.successful(submissions))
+
+      val result = await(route(app, request).get)
+
+      status(result) shouldBe OK
+      jsonBodyOf(result) shouldBe Json.toJson(submissions)
+    }
+
+    "return 200 Ok with empty list when there are no declarations present for the logged in user" in {
+      withAuthorizedUser()
+      when(mockImportService.getSubmissions(any[String])).thenReturn(Future.successful(Seq.empty))
+
+      val result = await(route(app, request).get)
+
+      status(result) shouldBe OK
+      jsonBodyOf(result) shouldBe Json.arr()
+    }
+
+    "return 401 Unauthorized when authorisation fails due to insufficient enrolments" in {
+      unAuthorisedUser(exceptionToThrow = InsufficientEnrolments("write:something"))
+
+      val result = await(route(app, request).get)
+      status(result) shouldBe UNAUTHORIZED
+    }
+
+    "return 401 Unauthorized when authorisation fails, other authorisation Error" in {
+      unAuthorisedUser(exceptionToThrow = InsufficientConfidenceLevel("vote of no confidence"))
+
+      val result = await(route(app, request).get)
+      status(result) shouldBe UNAUTHORIZED
+    }
+
+    "return 401 Unauthorized when user is without Eori" in {
+      userWithoutEori()
+
+      val result = await(route(app, request).get)
+      status(result) shouldBe UNAUTHORIZED
+    }
+
+    "return 500 when authorisation fails with non auth related exception" in {
+      unAuthorisedUser(exceptionToThrow = new RuntimeException("Connection refused"))
+
+      val result = await(route(app, request).get)
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+    }
+
+    "return 500 when something goes wrong" in {
+      withAuthorizedUser()
+      when(mockImportService.getSubmissions(any[String])).thenReturn(Future.failed(new RuntimeException("Connection refused")))
+
+      val result = await(route(app, request).get)
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+    }
+
+  }
 }

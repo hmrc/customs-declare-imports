@@ -18,6 +18,7 @@ package integration.repositories
 
 import akka.stream.Materializer
 import java.util.UUID
+import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -30,9 +31,9 @@ import uk.gov.hmrc.customs.imports.repositories._
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.base.ImportsTestData
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
 import scala.reflect.ClassTag
 
 class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
@@ -71,8 +72,7 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
         foundSubmission.head.mrn shouldBe Some(mrn)
 
         // a timestamp has been generated representing "creation time" of case class instance
-        foundSubmission.head.submittedDateTime should (be >= before).and(be <= System.currentTimeMillis())
-
+        foundSubmission.head.submittedDateTime.getMillis should (be >= before).and(be <= System.currentTimeMillis())
     }
 
     "findByEori returns the correct persisted submission " in {
@@ -128,11 +128,13 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
       foundSubmission.mrn shouldBe Some(mrn)
 
       foundSubmission.actions.length shouldBe 2
-      foundSubmission.actions.head.dateTimeSent shouldBe action1.dateTimeSent
+      foundSubmission.actions.head.dateTimeSent shouldBe new DateTime(action1.dateTimeSent)
       foundSubmission.actions.head.notifications.head.functionCode shouldBe notification1.functionCode
+      foundSubmission.actions.head.notifications.head.dateTimeIssued shouldBe new DateTime(notification1.dateTimeIssued)
       foundSubmission.actions.head.notifications.last.functionCode shouldBe notification2.functionCode
+      foundSubmission.actions.head.notifications.last.dateTimeIssued shouldBe new DateTime(notification2.dateTimeIssued)
 
-      foundSubmission.actions.last.dateTimeSent shouldBe action2.dateTimeSent
+      foundSubmission.actions.last.dateTimeSent shouldBe new DateTime(action2.dateTimeSent)
       foundSubmission.actions.last.notifications shouldBe Seq.empty
     }
 
