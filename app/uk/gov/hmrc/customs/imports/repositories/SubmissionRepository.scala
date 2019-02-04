@@ -17,40 +17,92 @@
 package uk.gov.hmrc.customs.imports.repositories
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
-import play.api.libs.json.{JsString, JsValue, Json}
+import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.{FailoverStrategy, ReadPreference}
+import reactivemongo.api.commands.Command
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.customs.imports.models.Submission
+import reactivemongo.play.json.JSONSerializationPack
+import uk.gov.hmrc.customs.imports.models.{Declaration, Submission}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
+import reactivemongo.play.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: ExecutionContext)
-    extends ReactiveRepository[Submission, BSONObjectID](
-      "submissions",
-      mc.mongoConnector.db,
-      Submission.formats,
-      objectIdFormats
-    ) {
+  extends ReactiveRepository[Submission, BSONObjectID](
+    "submissions",
+    mc.mongoConnector.db,
+    Submission.formats,
+    objectIdFormats
+  ) {
 
   override def indexes: Seq[Index] = Seq(
     Index(Seq("eori" -> IndexType.Ascending), name = Some("eoriIdx")),
     Index(Seq("localReferenceNumber" -> IndexType.Ascending), name = Some("lrnIdx"))
   )
 
-  def findByEori(eori: String): Future[Seq[Submission]] = find("eori" -> JsString(eori))
+  def findByEori(eori: String): Future[Seq[Declaration]] = {
+    val commandDoc = Json.obj(
+      "aggregate" -> collectionName,
+      "pipeline" -> List(
+        Json.obj("$match" -> Json.obj("eori" -> eori)),
+        Json.obj(
+          "$lookup" -> Json.obj(
+            "from" -> "submissionActions",
+            "localField" -> "_id",
+            "foreignField" -> "submissionId",
+            "as" -> "actions")),
+        Json.obj(
+          "$unwind" -> Json.obj(
+            "path" -> "$actions",
+            "preserveNullAndEmptyArrays" -> true)),
+        Json.obj(
+          "$lookup" -> Json.obj(
+            "from" -> "submissionsNotifications",
+            "localField" -> "actions.conversationId",
+            "foreignField" -> "conversationId",
+            "as" -> "actions.notifications")),
+        Json.obj("$sort" -> Json.obj("submittedDateTime" -> -1)),
+        Json.obj(
+          "$group" -> Json.obj(
+            "_id" -> "$_id",
+            "eori" -> Json.obj("$first" -> "$eori"),
+            "localReferenceNumber" -> Json.obj("$first" -> "$localReferenceNumber"),
+            "mrn" -> Json.obj("$first" -> "$mrn"),
+            "submittedDateTime" -> Json.obj("$first" -> "$submittedDateTime"),
+            "actions" -> Json.obj("$push" -> "$actions"))),
+        Json.obj(
+          "$project" -> Json.obj(
+            "_id" -> 1,
+            "eori" -> 1,
+            "localReferenceNumber" -> 1,
+            "mrn" -> 1,
+            "submittedDateTime" -> 1,
+            "actions" -> Json.obj(
+              "$filter" -> Json.obj("input" -> "$actions", "as" -> "a", "cond" -> Json.obj("$ifNull" -> Json.arr("$$a._id", false))))))),
+    "allowDiskUse" -> true)
+
+    val runner = Command.run(JSONSerializationPack, FailoverStrategy())
+    runner.apply(collection.db, runner.rawCommand(commandDoc)).one[JsObject](ReadPreference.Primary).flatMap { json =>
+      (json \ "result").validate[Seq[Declaration]] match {
+        case JsSuccess(result, _) => Future.successful(result)
+        case JsError(errors) =>
+          Future.failed(new RuntimeException((json \ "errmsg").asOpt[String].getOrElse(errors.mkString(","))))
+      }
+    }
+  }
 
   def getByEoriAndMrn(eori: String, mrn: String): Future[Option[Submission]] =
     find("eori" -> JsString(eori), "mrn" -> JsString(mrn)).map(_.headOption)
 
   def updateSubmission(submission: Submission) = {
-    val finder = Json.obj( "eori" -> submission.eori, "localReferenceNumber" -> submission.localReferenceNumber)
+    val finder = Json.obj("eori" -> submission.eori, "localReferenceNumber" -> submission.localReferenceNumber)
 
-    val modifier =Json.obj(
+    val modifier = Json.obj(
       "$set" ->
         Json.obj("mrn" -> submission.mrn)
     )

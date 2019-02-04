@@ -16,6 +16,8 @@
 
 package integration.repositories
 
+import java.util.UUID
+
 import org.scalatest.BeforeAndAfterEach
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -49,6 +51,26 @@ class SubmissionActionRepositorySpec extends CustomsImportsBaseSpec with BeforeA
       foundAction(0).submissionId shouldBe actionToPersist.submissionId
       foundAction(0).conversationId shouldBe conversationId
       foundAction(0).dateTimeSent should (be >= before).and(be <= System.currentTimeMillis())
+    }
+
+    "find by conversationId should return the relevant submissionAction" in{
+      val actionToPersist = submissionAction
+      await(repo.insert(actionToPersist)).ok shouldBe true
+
+       val  foundAction : SubmissionAction = await(repo.findByConversationId(conversationId)).get
+
+      foundAction.submissionId shouldBe actionToPersist.submissionId
+      foundAction.conversationId shouldBe conversationId
+      foundAction.dateTimeSent should (be >= before).and(be <= System.currentTimeMillis())
+    }
+
+    "find by conversationId should return None when there is no match" in{
+      val actionToPersist = submissionAction
+      await(repo.insert(actionToPersist)).ok shouldBe true
+
+      val  foundAction : Option[SubmissionAction] = await(repo.findByConversationId(UUID.randomUUID().toString))
+
+      foundAction shouldBe None
     }
   }
 

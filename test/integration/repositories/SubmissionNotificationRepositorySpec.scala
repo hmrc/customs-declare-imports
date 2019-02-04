@@ -25,7 +25,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.concurrent.Execution.Implicits
 import play.api.libs.json.JsString
 import uk.gov.hmrc.customs.imports.models.SubmissionNotification
-import uk.gov.hmrc.customs.imports.repositories.NotificationsRepository
+import uk.gov.hmrc.customs.imports.repositories.SubmissionNotificationRepository
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.base.ImportsTestData
 
@@ -34,7 +34,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
 import scala.reflect.ClassTag
 
-class NotificationsRepositorySpec extends UnitSpec with GuiceOneAppPerSuite with BeforeAndAfterEach
+class SubmissionNotificationRepositorySpec extends UnitSpec with GuiceOneAppPerSuite with BeforeAndAfterEach
   with ScalaFutures with ImportsTestData {
 
   override protected def afterEach(): Unit = {
@@ -54,7 +54,7 @@ class NotificationsRepositorySpec extends UnitSpec with GuiceOneAppPerSuite with
 
   override lazy val app: Application = GuiceApplicationBuilder().build()
 
-  val repo: NotificationsRepository = component[NotificationsRepository]
+  val repo: SubmissionNotificationRepository = component[SubmissionNotificationRepository]
 
   "NotificationsRepository" should {
     "save notification with functionCode, conversationId and timestamp" in {

@@ -126,13 +126,21 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
     }
 
     "return 500 when headers not present" in {
+      withAuthorizedUser()
 
       val result = route(app, fakeXmlRequest).get
       status(result) shouldBe INTERNAL_SERVER_ERROR
 
-
     }
 
+  }
+
+  "POST /notify " should {
+    "return 200 OK" in {
+      val result = route(app, FakeRequest("POST", "/notify")).get
+
+      status(result) shouldBe OK
+    }
   }
 
 }

@@ -20,10 +20,12 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
+import reactivemongo.api.ReadPreference
 import reactivemongo.api.commands.WriteResult
+import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.imports.connectors.{CustomsDeclarationsConnector, CustomsDeclarationsResponse}
-import uk.gov.hmrc.customs.imports.models.{Submission, SubmissionAction}
-import uk.gov.hmrc.customs.imports.repositories.{SubmissionActionRepository, SubmissionRepository}
+import uk.gov.hmrc.customs.imports.models.{Submission, SubmissionAction, SubmissionNotification}
+import uk.gov.hmrc.customs.imports.repositories.{SubmissionActionRepository, SubmissionNotificationRepository, SubmissionRepository}
 import uk.gov.hmrc.customs.imports.services.ImportService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
@@ -32,14 +34,18 @@ import unit.base.ImportsTestData
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.Elem
 
-class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures with ImportsTestData{
+class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures with ImportsTestData {
 
   trait SetUp {
     val mockSubmissionRepo: SubmissionRepository = mock[SubmissionRepository]
     val mockSubmissionActionRepo: SubmissionActionRepository = mock[SubmissionActionRepository]
+    val mockSubmissionNotificationRepo: SubmissionNotificationRepository = mock[SubmissionNotificationRepository](withSettings().verboseLogging())
     val mockCustomsDeclarationsConnector: CustomsDeclarationsConnector = mock[CustomsDeclarationsConnector]
     implicit val hc: HeaderCarrier = mock[HeaderCarrier]
-    val testObj = new ImportService(mockSubmissionRepo, mockSubmissionActionRepo, mockCustomsDeclarationsConnector)
+    val testObj = new ImportService(mockSubmissionRepo,
+                                    mockSubmissionActionRepo,
+                                    mockSubmissionNotificationRepo,
+                                    mockCustomsDeclarationsConnector)
   }
 
   "ImportService" should {
@@ -59,6 +65,22 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       verify(mockSubmissionRepo, times(1)).insert(any[Submission])(any[ExecutionContext])
       verify(mockSubmissionActionRepo, times(1)).insert(any[SubmissionAction])(any[ExecutionContext])
       result should be(true)
+    }
+
+    "save notification Data in repository when submissionAction and Submission exist" in new SetUp() {
+      val mockWriteResult: WriteResult = mock[WriteResult]
+      when(mockSubmissionRepo.findById(any[BSONObjectID],any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(Some(submissionNoMrn)))
+      when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(Some(submissionAction)))
+      when(mockSubmissionRepo.updateSubmission(any[Submission])).thenReturn(Future.successful(true))
+      when(mockWriteResult.ok).thenReturn(true)
+      when(mockSubmissionNotificationRepo.insert(any())(any())).thenReturn(Future.successful(mockWriteResult))
+
+      val result: Unit = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
+
+      verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
+      verify(mockSubmissionRepo, times(1)).findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])
+      verify(mockSubmissionNotificationRepo, times(1)).insert(any())(any())
+
     }
 
 

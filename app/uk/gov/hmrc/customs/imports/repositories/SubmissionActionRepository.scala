@@ -17,6 +17,7 @@
 package uk.gov.hmrc.customs.imports.repositories
 
 import javax.inject.{Inject, Singleton}
+import play.api.libs.json.JsString
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
@@ -24,7 +25,7 @@ import uk.gov.hmrc.customs.imports.models.{Submission, SubmissionAction}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
 import uk.gov.hmrc.mongo.{AtomicUpdate, ReactiveRepository}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SubmissionActionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: ExecutionContext)
@@ -35,9 +36,14 @@ class SubmissionActionRepository @Inject()(implicit mc: ReactiveMongoComponent, 
     objectIdFormats
   ) {
 
+
   override def indexes: Seq[Index] = Seq(
-    Index(Seq("conversationId" -> IndexType.Ascending), unique = true, name = Some("conversationIdx")),
-    Index(Seq("submissionId" -> IndexType.Ascending), name = Some("submissionIdx"))
+  Index(Seq("conversationId" -> IndexType.Ascending), unique = true, name = Some("conversationIdx")),
+  Index(Seq("submissionId" -> IndexType.Ascending), name = Some("submissionIdx"))
   )
+
+  def findByConversationId(conversationId: String): Future[Option[SubmissionAction]] = {
+    find("conversationId" -> JsString(conversationId)).map(_.headOption)
+  }
 
 }

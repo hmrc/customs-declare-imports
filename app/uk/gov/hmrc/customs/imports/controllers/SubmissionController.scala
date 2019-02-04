@@ -18,71 +18,67 @@ package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.customs.imports.config.AppConfig
+import uk.gov.hmrc.customs.imports.models.AuthorizedImportRequest
 import uk.gov.hmrc.customs.imports.services.ImportService
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.NodeSeq
-import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class SubmissionController @Inject()(
-                                      appConfig: AppConfig,
-                                      authConnector: AuthConnector,
-                                      headerValidator: HeaderValidator,
-                                      importService: ImportService
-) extends ImportController(authConnector) {
+class SubmissionController @Inject()(appConfig: AppConfig,
+                                     authConnector: AuthConnector,
+                                     headerValidator: HeaderValidator,
+                                     importService: ImportService)(implicit ec: ExecutionContext) extends ImportController(authConnector) {
 
   private def xmlOrEmptyBody: BodyParser[AnyContent] = BodyParser(rq => parse.xml(rq).map {
-    case Right(xml) =>
-      Right(AnyContentAsXml(xml))
-    case _ =>
-      Left(ErrorResponse.ErrorInvalidPayload.XmlResult)
+    case Right(xml) => Right(AnyContentAsXml(xml))
+    case _ => Left(ErrorResponse.ErrorInvalidPayload.XmlResult)
   })
 
-  def submitDeclaration():  Action[AnyContent] = Action.async(bodyParser = xmlOrEmptyBody) { implicit request =>
+  def submitDeclaration(): Action[AnyContent] = authorisedAction(bodyParser = xmlOrEmptyBody) { implicit request =>
     implicit val headers: Map[String, String] = request.headers.toSimpleMap
     processRequest
   }
 
-  def processRequest()(implicit request: Request[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
-   headerValidator.validateAndExtractHeaders match {
-     case Right(vhr) =>
-       authoriseWithEori(vhr).flatMap {
-         case Right(ahr) => {
-             request.body.asXml match {
-               case Some(xml) =>
-                 handleDeclarationSubmit(ahr.eori.value, ahr.localReferenceNumber.value, xml).recoverWith {
-                   case e: Exception =>
-                     Logger.error(s"problem calling declaration api ${e.getMessage}")
-                     Future.successful(ErrorResponse.ErrorInternalServerError.XmlResult)
-                 }
-               case None =>
-                 Logger.error("body is not xml")
-                 Future.successful(ErrorResponse.ErrorInvalidPayload.XmlResult)
-             }
-         }
-         case Left(error) => {
-           Logger.error("Problems with Authorisation")
-           Future.successful(error.XmlResult)
-         }
-       }
-     case Left(error) =>
-         Logger.error("Invalid Headers found")
-         Future.successful(error.XmlResult)
-     }
-   }
-
-
-  def handleDeclarationSubmit(eori: String, lrn: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Result] = {
-     importService.handleDeclarationSubmit(eori, lrn, xml).map(res => {
-       if(res){ Accepted
-       } else{ ErrorResponse.ErrorInternalServerError.XmlResult }
-     })
+  def getDeclarations(): Action[AnyContent] = authorisedAction(BodyParsers.parse.default) { implicit request =>
+    importService.getSubmissions(request.eori.value).map(submissions => Ok(Json.toJson(submissions)))
   }
 
+  def handleNotification(): Action[AnyContent] = Action {
+    Ok
+  }
 
+  private def processRequest()(implicit request: AuthorizedImportRequest[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
+    headerValidator.validateAndExtractHeaders match {
+      case Right(vhr) => request.body.asXml match {
+        case Some(xml) =>
+          handleDeclarationSubmit(request.eori.value, vhr.localReferenceNumber.value, xml).recoverWith {
+            case e: Exception =>
+              Logger.error(s"problem calling declaration api ${e.getMessage}")
+              Future.successful(ErrorResponse.ErrorInternalServerError.XmlResult)
+          }
+        case None =>
+          Logger.error("body is not xml")
+          Future.successful(ErrorResponse.ErrorInvalidPayload.XmlResult)
+      }
+      case Left(error) =>
+        Logger.error("Invalid Headers found")
+        Future.successful(error.XmlResult)
+    }
+  }
+
+  private def handleDeclarationSubmit(eori: String, lrn: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Result] = {
+     importService.handleDeclarationSubmit(eori, lrn, xml).map { res =>
+       if (res) {
+         Accepted
+       } else {
+         ErrorResponse.ErrorInternalServerError.XmlResult
+       }
+     }
+  }
 }
