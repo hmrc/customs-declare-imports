@@ -46,19 +46,20 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
     "save submission Data in repository" in new SetUp() {
       val mockWriteResult: WriteResult = mock[WriteResult]
       val xmlVal: Elem = <iamxml></iamxml>
+      val conversationId = randomConversationId
 
       when(mockCustomsDeclarationsConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
-        .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
+        .thenReturn(Future.successful(CustomsDeclarationsResponse(conversationId)))
       when(mockSubmissionRepo.insert(any[Submission])(any[ExecutionContext])).thenReturn(Future.successful(mockWriteResult))
       when(mockSubmissionActionRepo.insert(any[SubmissionAction])(any[ExecutionContext])).thenReturn(Future.successful(mockWriteResult))
       when(mockWriteResult.ok).thenReturn(true)
 
-      val result: Boolean = await(testObj.handleDeclarationSubmit(declarantEoriValue, declarantLrnValue,  xmlVal))
+      val result: Option[String] = await(testObj.handleDeclarationSubmit(declarantEoriValue, declarantLrnValue,  xmlVal))
 
       verify(mockCustomsDeclarationsConnector, times(1)).submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext])
       verify(mockSubmissionRepo, times(1)).insert(any[Submission])(any[ExecutionContext])
       verify(mockSubmissionActionRepo, times(1)).insert(any[SubmissionAction])(any[ExecutionContext])
-      result should be(true)
+      result shouldBe Some(conversationId)
     }
 
 

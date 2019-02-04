@@ -32,18 +32,19 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
                               submissionActionRepository: SubmissionActionRepository,
                               customsDeclarationsConnector: CustomsDeclarationsConnector) {
 
-  def handleDeclarationSubmit(eori: String, localReferenceNumber: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def handleDeclarationSubmit(eori: String, localReferenceNumber: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Option[String]] = {
     customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString()).flatMap({ response =>
-      Logger.debug(s"conversationId: ${response.conversationId}")
+      val conversationId = response.conversationId
+      Logger.debug(s"conversationId: ${conversationId}")
       val submission = Submission(eori, localReferenceNumber, None)
       submissionRepository
         .insert(submission)
         .flatMap(submissionResult => {
-          if(submissionResult.ok){
-            submissionActionRepository.insert(SubmissionAction(submission.id, response.conversationId))
-              .map(submissionActionResult => submissionActionResult.ok)
-          }else{
-            Future.successful(false)
+          if (submissionResult.ok) {
+            submissionActionRepository.insert(SubmissionAction(submission.id, conversationId))
+              .map(submissionActionResult => Some(conversationId))
+          } else {
+            Future.successful(None)
           }
         })
     })

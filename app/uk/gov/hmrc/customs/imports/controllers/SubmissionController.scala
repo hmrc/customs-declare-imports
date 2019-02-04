@@ -73,12 +73,9 @@ class SubmissionController @Inject()(appConfig: AppConfig,
   }
 
   private def handleDeclarationSubmit(eori: String, lrn: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Result] = {
-     importService.handleDeclarationSubmit(eori, lrn, xml).map { res =>
-       if (res) {
-         Accepted
-       } else {
-         ErrorResponse.ErrorInternalServerError.XmlResult
-       }
-     }
+    importService.handleDeclarationSubmit(eori, lrn, xml).map {
+      case Some(conversationId) => Accepted.withHeaders("X-Conversation-ID" -> conversationId)
+      case _ => ErrorResponse.ErrorInternalServerError.XmlResult
+    }
   }
 }

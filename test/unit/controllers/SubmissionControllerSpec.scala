@@ -59,16 +59,19 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
   "POST /declaration " should {
 
-      "return 200 when submission is persisted and xml request is processed" in {
-        withAuthorizedUser()
-        when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
-          .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
-        when(mockImportService.handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier])).thenReturn(Future.successful(true))
+    "return 202 Accepted with X-Conversation-ID header when submission is persisted and xml request is processed" in {
+      withAuthorizedUser()
+      when(mockDeclarationsApiConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
+        .thenReturn(Future.successful(CustomsDeclarationsResponse(randomConversationId)))
+      when(mockImportService.handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier])).thenReturn(Future.successful(Some(conversationId)))
 
-        val result = route(app, fakeXmlRequestWithHeaders).get
-          status(result) shouldBe ACCEPTED
-            verify(mockImportService, times(1)).handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier])
-      }
+      val result = route(app, fakeXmlRequestWithHeaders).get
+
+      status(result) shouldBe ACCEPTED
+      result.header.headers.get("X-Conversation-ID") shouldBe Some(conversationId)
+
+      verify(mockImportService, times(1)).handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier])
+    }
 
     "return 401 when authorisation fails, no enrolments" in {
       unAuthorisedUser(exceptionToThrow = InsufficientEnrolments("jhkjhk"))
@@ -102,7 +105,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
     "return 500 when confirm submission is NOT persisted and xml request is processed" in {
       withAuthorizedUser()
-      when(mockImportService.handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier])).thenReturn(Future.successful(false))
+      when(mockImportService.handleDeclarationSubmit(any[String], any[String], any[NodeSeq])(any[HeaderCarrier])).thenReturn(Future.successful(None))
 
         val result = route(app, fakeXmlRequestWithHeaders).get
       status(result) shouldBe INTERNAL_SERVER_ERROR
