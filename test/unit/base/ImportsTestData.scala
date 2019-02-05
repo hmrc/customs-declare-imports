@@ -99,13 +99,13 @@ trait ImportsTestData {
 
   protected def randomString(length: Int): String = Random.alphanumeric.take(length).mkString
 
-  val exampleAcceptNotification = <_2:MetaData xmlns:_2="urn:wco:datamodel:WCO:DocumentMetaData-DMS:2">
+  def exampleAcceptNotification(functionCode :String) = <_2:MetaData xmlns:_2="urn:wco:datamodel:WCO:DocumentMetaData-DMS:2">
     <_2:WCODataModelVersionCode>3.6</_2:WCODataModelVersionCode>
     <_2:WCOTypeName>RES</_2:WCOTypeName><_2:ResponsibleCountryCode/>
     <_2:ResponsibleAgencyName/><_2:AgencyAssignedCustomizationCode/>
     <_2:AgencyAssignedCustomizationVersionCode/>
     <_2_1:Response xmlns:_2_1="urn:wco:datamodel:WCO:RES-DMS:2">
-      <_2_1:FunctionCode>01</_2_1:FunctionCode>
+      <_2_1:FunctionCode>{functionCode}</_2_1:FunctionCode>
       <_2_1:FunctionalReferenceID>25f244455ba54209989f7fe90e00107a</_2_1:FunctionalReferenceID>
       <_2_1:IssueDateTime>
         <_2_2:DateTimeString formatCode="304" xmlns:_2_2="urn:wco:datamodel:WCO:Response_DS:DMS:2">20190114144531Z</_2_2:DateTimeString>

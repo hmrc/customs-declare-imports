@@ -18,6 +18,8 @@ package uk.gov.hmrc.customs.imports.models
 
 import play.api.mvc.{Request, WrappedRequest}
 
+import scala.xml.NodeSeq
+
 
 trait HasLocalReferenceNumber {
   val localReferenceNumber: LocalReferenceNumber
@@ -31,6 +33,10 @@ case class LocalReferenceNumber(value: String) extends AnyVal
 
 case class Eori(value: String) extends AnyVal
 
+
+
 case class ValidatedHeadersSubmissionRequest(localReferenceNumber: LocalReferenceNumber) extends HasLocalReferenceNumber
 
 case class AuthorizedImportSubmissionRequest[A](eori: Eori, request: Request[A]) extends WrappedRequest[A](request) with HasEori
+
+case class ValidatedNotificationRequest(functionCode: Int, mrn: String)

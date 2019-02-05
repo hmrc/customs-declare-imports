@@ -57,12 +57,7 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
 
 
 
-  def handleNotificationReceived(conversationId: String,  xml: NodeSeq): Future[Boolean] = {
-    val functionCode = {
-      xml \\ "FunctionCode" text
-    }.toInt
-    val mrn = xml \\ "ID" text
-
+  def handleNotificationReceived(conversationId: String, functionCode: Int, mrn: String, xml: NodeSeq): Future[Boolean] = {
     for {
       submissionId <- findSubmissionIdByConversationId(conversationId)
       submission <- findSubmissionBySubmissionId(submissionId)
@@ -93,7 +88,10 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
       .map(submissionActionOption => {
             submissionActionOption match {
               case Some(submissionAction) => Some(submissionAction.submissionId)
-              case None => None
+              case None => {
+                Logger.error(s"unable to find submission for conversationId: ${conversationId}")
+                None
+              }
             }
         })
   }
@@ -104,13 +102,11 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
                                         submission: Option[Submission],
                                         updateResult: Boolean): Future[Boolean] = {
     if (!updateResult) {
-      Logger.error(s"unable to updateSubmission with received MRN conversationID:$conversationId")
-
+      Logger.error(s"unable to updateSubmission with received MRN conversationId:$conversationId")
     }
     submission match {
-      case Some(submission) =>  submissionNotificationRepository.insert(SubmissionNotification(functionCode, conversationId)).map(
-        writeResult => writeResult.ok
-      )
+      case Some(_) =>  submissionNotificationRepository.insert(SubmissionNotification(functionCode, conversationId))
+        .map(writeResult => writeResult.ok)
       case None => Future.successful(false)
     }
 

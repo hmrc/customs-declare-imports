@@ -34,14 +34,19 @@ class NotificationControllerSpec extends CustomsImportsBaseSpec with ImportsTest
 
   val saveUri = "/notify"
 
-  val xmlBody: String =  randomSubmitDeclaration.toXml
+
 
   val fakeXmlRequest: FakeRequest[String] = FakeRequest("POST", saveUri)
-    .withBody(xmlBody).withHeaders(CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
+    .withBody(exampleAcceptNotification("01").toString).withHeaders(CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
+
 
   val fakeXmlRequestWithHeaders: FakeRequest[String] = fakeXmlRequest
     .withHeaders(CustomsHeaderNames.XConversationIdName -> conversationId,
-      CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
+  CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
+
+  val fakeXmlRequestInvalidFunctionCode: FakeRequest[String] = fakeXmlRequestWithHeaders
+    .withBody(exampleAcceptNotification("NAN").toString)
+
 
   val fakeXmlRequestWithNoConversationId: FakeRequest[String] = fakeXmlRequest
     .withHeaders(CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
@@ -59,24 +64,31 @@ class NotificationControllerSpec extends CustomsImportsBaseSpec with ImportsTest
   "POST /notify " should {
 
       "return 200 when notification is received and request is processed" in {
-        when(mockImportService.handleNotificationReceived(any[String], any[NodeSeq])).thenReturn(Future.successful(true))
+        when(mockImportService.handleNotificationReceived(any[String], any[Int], any[String], any[NodeSeq])).thenReturn(Future.successful(true))
 
         val result = route(app, fakeXmlRequestWithHeaders).get
           status(result) shouldBe OK
-        verify(mockImportService, times(1)).handleNotificationReceived(any[String], any[NodeSeq])
+        verify(mockImportService, times(1)).handleNotificationReceived(any[String], any[Int], any[String], any[NodeSeq])
       }
 
     "return 200 when notification is received and request cannot be processed (import service returns false)" in {
-      when(mockImportService.handleNotificationReceived(any[String], any[NodeSeq])).thenReturn(Future.successful(false))
+      when(mockImportService.handleNotificationReceived(any[String], any[Int], any[String], any[NodeSeq])).thenReturn(Future.successful(false))
 
       val result = route(app, fakeXmlRequestWithHeaders).get
       status(result) shouldBe OK
-      verify(mockImportService, times(1)).handleNotificationReceived(any[String], any[NodeSeq])
+      verify(mockImportService, times(1)).handleNotificationReceived(any[String], any[Int], any[String], any[NodeSeq])
     }
 
     "return 200 when notification is received and request doesn't contain a conversation Id)" in {
 
       val result = route(app, fakeXmlRequestWithNoConversationId).get
+      status(result) shouldBe OK
+      verifyZeroInteractions(mockImportService)
+    }
+
+    "return 200 when notification is received and request doesn't contain a parsable FunctionCode)" in {
+
+      val result = route(app, fakeXmlRequestInvalidFunctionCode).get
       status(result) shouldBe OK
       verifyZeroInteractions(mockImportService)
     }

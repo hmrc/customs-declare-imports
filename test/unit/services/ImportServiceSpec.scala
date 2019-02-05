@@ -76,7 +76,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       when(mockWriteResult.ok).thenReturn(true)
       when(mockSubmissionNotificationRepo.insert(any[SubmissionNotification])(any[ExecutionContext])).thenReturn(Future.successful(mockWriteResult))
 
-      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, 1, mrn, exampleAcceptNotification("01")))
 
       verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
       verify(mockSubmissionRepo, times(1)).findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])
@@ -89,7 +89,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
 
       when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(None))
 
-      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, 1, mrn, exampleAcceptNotification("01")))
 
       verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
       verifyZeroInteractions(mockSubmissionRepo)
@@ -102,7 +102,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       when(mockSubmissionRepo.findById(any[BSONObjectID],any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(None))
       when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(Some(submissionAction)))
 
-      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, 1, mrn,  exampleAcceptNotification("01")))
 
       verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
       verify(mockSubmissionRepo, times(1)).findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])
@@ -119,7 +119,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       when(mockWriteResult.ok).thenReturn(true)
       when(mockSubmissionNotificationRepo.insert(any[SubmissionNotification])(any[ExecutionContext])).thenReturn(Future.successful(mockWriteResult))
 
-      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, exampleAcceptNotification))
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, 1, mrn,  exampleAcceptNotification("01")))
 
       verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
       verify(mockSubmissionRepo, times(1)).findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])
