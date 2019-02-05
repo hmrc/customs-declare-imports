@@ -42,7 +42,7 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
     super.afterEach()
     await(repo.removeAll())
     await(actionRepo.removeAll())
-    await(notificationRepo.removeAll())
+    await(submissionNotificationRepository.removeAll())
   }
 
   protected def component[T: ClassTag]: T = app.injector.instanceOf[T]
@@ -50,7 +50,7 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
   override lazy val app: Application = GuiceApplicationBuilder().configure("metrics.enabled" -> false).build()
   val repo: SubmissionRepository = component[SubmissionRepository]
   val actionRepo: SubmissionActionRepository = component[SubmissionActionRepository]
-  val notificationRepo: NotificationsRepository = component[NotificationsRepository]
+  val submissionNotificationRepository: SubmissionNotificationRepository = component[SubmissionNotificationRepository]
 
   implicit val mat: Materializer = app.materializer
 
@@ -119,8 +119,8 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
       await(actionRepo.insert(action2))
       await(actionRepo.insert(submissionAction))
 
-      await(notificationRepo.insert(notification1))
-      await(notificationRepo.insert(notification2))
+      await(submissionNotificationRepository.insert(notification1))
+      await(submissionNotificationRepository.insert(notification2))
 
       val foundSubmission = await(repo.findByEori(eori)).head
 

@@ -62,7 +62,7 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
             "preserveNullAndEmptyArrays" -> true)),
         Json.obj(
           "$lookup" -> Json.obj(
-            "from" -> "importNotifications",
+            "from" -> "submissionsNotifications",
             "localField" -> "actions.conversationId",
             "foreignField" -> "conversationId",
             "as" -> "actions.notifications")),

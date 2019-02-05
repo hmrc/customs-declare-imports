@@ -18,7 +18,7 @@ package unit.controllers
 
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.imports.controllers.{ErrorResponse, HeaderValidator}
-import uk.gov.hmrc.customs.imports.models.{LocalReferenceNumber, ValidatedHeadersRequest}
+import uk.gov.hmrc.customs.imports.models.{LocalReferenceNumber, ValidatedHeadersSubmissionRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.base.ImportsTestData
@@ -46,13 +46,13 @@ class HeaderValidatorSpec extends UnitSpec with MockitoSugar with ImportsTestDat
       implicit val h: Map[String, String] = ValidHeaders
       implicit val hc = mock[HeaderCarrier]
 
-      val result: Either[ErrorResponse, ValidatedHeadersRequest] = validator.validateAndExtractHeaders
-      result should be(Right(ValidatedHeadersRequest(LocalReferenceNumber(declarantLrnValue))))
+      val result: Either[ErrorResponse, ValidatedHeadersSubmissionRequest] = validator.validateAndExtractSubmissionHeaders
+      result should be(Right(ValidatedHeadersSubmissionRequest(LocalReferenceNumber(declarantLrnValue))))
     }
 
     "return Left ErrorResponse when validateHeaders is called with invalid headers" in new SetUp {
       implicit val h: Map[String, String] = Map("" -> "")
-      val result: Either[ErrorResponse, ValidatedHeadersRequest] = validator.validateAndExtractHeaders
+      val result: Either[ErrorResponse, ValidatedHeadersSubmissionRequest] = validator.validateAndExtractSubmissionHeaders
       result should be(Left(ErrorResponse.ErrorInternalServerError))
     }
   }

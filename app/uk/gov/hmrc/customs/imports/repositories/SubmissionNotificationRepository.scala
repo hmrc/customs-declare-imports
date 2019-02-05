@@ -27,9 +27,9 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class NotificationsRepository @Inject()(mc: ReactiveMongoComponent)(implicit ec: ExecutionContext)
+class SubmissionNotificationRepository @Inject()(mc: ReactiveMongoComponent)(implicit ec: ExecutionContext)
     extends ReactiveRepository[SubmissionNotification, BSONObjectID](
-      "importNotifications",
+      "submissionsNotifications",
       mc.mongoConnector.db,
       SubmissionNotification.formats,
       objectIdFormats

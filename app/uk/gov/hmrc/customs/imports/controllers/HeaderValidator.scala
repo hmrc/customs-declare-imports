@@ -17,7 +17,7 @@
 package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.Singleton
-import uk.gov.hmrc.customs.imports.models.{LocalReferenceNumber, ValidatedHeadersRequest}
+import uk.gov.hmrc.customs.imports.models.{LocalReferenceNumber, ValidatedHeadersSubmissionRequest}
 
 
 @Singleton
@@ -27,12 +27,16 @@ class HeaderValidator {
     headers.get(CustomsHeaderNames.XLrnHeaderName)
   }
 
+  def extractConversatioIdHeader(headers: Map[String, String]): Option[String] = {
+    headers.get(CustomsHeaderNames.XConversationIdName)
+  }
 
-  def validateAndExtractHeaders(implicit headers: Map[String, String]):
-  Either[ErrorResponse, ValidatedHeadersRequest] = {
+
+  def validateAndExtractSubmissionHeaders(implicit headers: Map[String, String]):
+  Either[ErrorResponse, ValidatedHeadersSubmissionRequest] = {
     val result = for{
       lrn <- extractLrnHeader(headers)
-    } yield ValidatedHeadersRequest(LocalReferenceNumber(lrn))
+    } yield ValidatedHeadersSubmissionRequest(LocalReferenceNumber(lrn))
     result match {
       case Some(vhr) =>
         Right(vhr)

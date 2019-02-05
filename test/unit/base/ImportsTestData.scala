@@ -46,6 +46,7 @@ trait ImportsTestData {
 
   val before: Long = System.currentTimeMillis()
   val submission = Submission(eori, lrn, Some(mrn))
+  val submissionNoMrn = Submission(eori, lrn, None)
   val conversationId = "58494f63-5749-4a62-8193-0452fdc7263b"
   val submissionAction = SubmissionAction(BSONObjectID.generate(), conversationId)
 
@@ -97,4 +98,53 @@ trait ImportsTestData {
   def randomConversationId: String = UUID.randomUUID().toString
 
   protected def randomString(length: Int): String = Random.alphanumeric.take(length).mkString
+
+  def exampleAcceptNotification(functionCode :String) = <_2:MetaData xmlns:_2="urn:wco:datamodel:WCO:DocumentMetaData-DMS:2">
+    <_2:WCODataModelVersionCode>3.6</_2:WCODataModelVersionCode>
+    <_2:WCOTypeName>RES</_2:WCOTypeName><_2:ResponsibleCountryCode/>
+    <_2:ResponsibleAgencyName/><_2:AgencyAssignedCustomizationCode/>
+    <_2:AgencyAssignedCustomizationVersionCode/>
+    <_2_1:Response xmlns:_2_1="urn:wco:datamodel:WCO:RES-DMS:2">
+      <_2_1:FunctionCode>{functionCode}</_2_1:FunctionCode>
+      <_2_1:FunctionalReferenceID>25f244455ba54209989f7fe90e00107a</_2_1:FunctionalReferenceID>
+      <_2_1:IssueDateTime>
+        <_2_2:DateTimeString formatCode="304" xmlns:_2_2="urn:wco:datamodel:WCO:Response_DS:DMS:2">20190114144531Z</_2_2:DateTimeString>
+      </_2_1:IssueDateTime>
+      <_2_1:AdditionalInformation>
+        <_2_1:StatementCode>smartErrorMsg</_2_1:StatementCode>
+        <_2_1:StatementDescription>Value per kilo appears too high for this commodity</_2_1:StatementDescription>
+        <_2_1:StatementTypeCode>1</_2_1:StatementTypeCode>
+        <_2_1:Pointer>
+          <_2_1:SequenceNumeric>1</_2_1:SequenceNumeric>
+          <_2_1:DocumentSectionCode>07B</_2_1:DocumentSectionCode>
+        </_2_1:Pointer>
+        <_2_1:Pointer>
+          <_2_1:SequenceNumeric>1</_2_1:SequenceNumeric>
+          <_2_1:DocumentSectionCode>53A</_2_1:DocumentSectionCode>
+        </_2_1:Pointer>
+      </_2_1:AdditionalInformation>
+      <_2_1:Error>
+        <_2_1:Description>Value per kilo appears too high for this commodity</_2_1:Description>
+        <_2_1:ValidationCode>DMS13000</_2_1:ValidationCode>
+        <_2_1:Pointer>
+          <_2_1:DocumentSectionCode>42A</_2_1:DocumentSectionCode>
+        </_2_1:Pointer>
+        <_2_1:Pointer>
+          <_2_1:DocumentSectionCode>67A</_2_1:DocumentSectionCode>
+        </_2_1:Pointer>
+        <_2_1:Pointer>
+          <_2_1:SequenceNumeric>1</_2_1:SequenceNumeric>
+          <_2_1:DocumentSectionCode>68A</_2_1:DocumentSectionCode>
+        </_2_1:Pointer>
+      </_2_1:Error>
+      <_2_1:Declaration>
+        <_2_1:AcceptanceDateTime>
+          <_2_2:DateTimeString formatCode="304" xmlns:_2_2="urn:wco:datamodel:WCO:Response_DS:DMS:2">20181115010101Z</_2_2:DateTimeString>
+        </_2_1:AcceptanceDateTime>
+        <_2_1:FunctionalReferenceID>Phil3018</_2_1:FunctionalReferenceID>
+        <_2_1:ID>19GB0JGCGQL0MFGVR8</_2_1:ID>
+        <_2_1:VersionID>1</_2_1:VersionID>
+      </_2_1:Declaration>
+    </_2_1:Response>
+  </_2:MetaData>
 }

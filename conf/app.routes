@@ -2,4 +2,4 @@
 
 POST      /declaration                                                          uk.gov.hmrc.customs.imports.controllers.SubmissionController.submitDeclaration()
 GET       /declarations                                                         uk.gov.hmrc.customs.imports.controllers.SubmissionController.getDeclarations()
-POST      /notify                                                               uk.gov.hmrc.customs.imports.controllers.SubmissionController.handleNotification()
+POST      /notify                                                               uk.gov.hmrc.customs.imports.controllers.NotificationController.handleNotification()
