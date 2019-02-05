@@ -21,7 +21,7 @@ import play.api.Logger
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.retrieve.Retrievals._
 import uk.gov.hmrc.auth.core.{AuthorisedFunctions, _}
-import uk.gov.hmrc.customs.imports.models.{AuthorizedImportRequest, Eori, ValidatedHeadersRequest}
+import uk.gov.hmrc.customs.imports.models.{AuthorizedImportSubmissionRequest, Eori, ValidatedHeadersSubmissionRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -34,10 +34,10 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
   private def hasEnrolment(allEnrolments: Enrolments): Option[EnrolmentIdentifier] =
     allEnrolments.getEnrolment("HMRC-CUS-ORG").flatMap(_.getIdentifier("EORINumber"))
 
-  private def authoriseWithEori[A](implicit hc: HeaderCarrier, request: Request[A]): Future[Either[ErrorResponse, AuthorizedImportRequest[A]]] = {
+  private def authoriseWithEori[A](implicit hc: HeaderCarrier, request: Request[A]): Future[Either[ErrorResponse, AuthorizedImportSubmissionRequest[A]]] = {
     authorised(Enrolment("HMRC-CUS-ORG")).retrieve(allEnrolments){ enrolments =>
       hasEnrolment(enrolments) match {
-        case Some(eori) => Future.successful(Right(AuthorizedImportRequest(Eori(eori.value), request)))
+        case Some(eori) => Future.successful(Right(AuthorizedImportSubmissionRequest(Eori(eori.value), request)))
         case _ => Future.successful(Left(ErrorResponse.ErrorUnauthorized))
       }
     } recover {
@@ -54,7 +54,7 @@ class ImportController @Inject()(override val authConnector: AuthConnector)(impl
   }
 
   def authorisedAction[A](bodyParser: BodyParser[A])
-                         (body: AuthorizedImportRequest[A] => Future[Result]): Action[A] = Action.async(bodyParser) { implicit request =>
+                         (body: AuthorizedImportSubmissionRequest[A] => Future[Result]): Action[A] = Action.async(bodyParser) { implicit request =>
       authoriseWithEori.flatMap {
         case Right(authorisedRequest) =>
           Logger.info(s"Authorised request for ${authorisedRequest.eori.value}")

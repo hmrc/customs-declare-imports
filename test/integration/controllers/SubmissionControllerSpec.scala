@@ -256,8 +256,14 @@ case class HttpExpectation(req: HttpRequest, resp: HttpResponse)
 
 
 
-class MockHttpClient(throwOrRespond: Either[Exception, HttpExpectation], config: Configuration, auditConnector: AuditConnector, wsClient: WSClient, actorSystem: ActorSystem)
-  extends DefaultHttpClient(config, auditConnector, wsClient, actorSystem = actorSystem) {
+class MockHttpClient(throwOrRespond: Either[Exception, HttpExpectation],
+                     config: Configuration,
+                     auditConnector: AuditConnector,
+                     wsClient: WSClient,
+                     actorSystem: ActorSystem) extends DefaultHttpClient(config,
+                                                                          auditConnector,
+                                                                          wsClient,
+                                                                          actorSystem = actorSystem) {
 
   val requests: mutable.Buffer[util.HttpRequest] = mutable.Buffer.empty
 

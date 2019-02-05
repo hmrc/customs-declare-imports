@@ -16,21 +16,18 @@
 
 package unit.controllers
 
-import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.any
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.http.ContentTypes
 import play.api.mvc.Codec
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.auth.core.{InsufficientConfidenceLevel, InsufficientEnrolments}
-import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsResponse
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
-import uk.gov.hmrc.http.HeaderCarrier
 import unit.base.{CustomsImportsBaseSpec, ImportsTestData}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.xml.NodeSeq
 
 class NotificationControllerSpec extends CustomsImportsBaseSpec with ImportsTestData with MockitoSugar with BeforeAndAfterEach{
@@ -46,6 +43,9 @@ class NotificationControllerSpec extends CustomsImportsBaseSpec with ImportsTest
     .withHeaders(CustomsHeaderNames.XConversationIdName -> conversationId,
       CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
+  val fakeXmlRequestWithNoConversationId: FakeRequest[String] = fakeXmlRequest
+    .withHeaders(CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
+
 
   val fakeinvalidRequestWithHeaders: FakeRequest[String] = FakeRequest("POST", saveUri)
     .withBody("<somerubbish></somerubbish>")
@@ -59,24 +59,40 @@ class NotificationControllerSpec extends CustomsImportsBaseSpec with ImportsTest
   "POST /notify " should {
 
       "return 200 when notification is received and request is processed" in {
+        when(mockImportService.handleNotificationReceived(any[String], any[NodeSeq])).thenReturn(Future.successful(true))
 
         val result = route(app, fakeXmlRequestWithHeaders).get
           status(result) shouldBe OK
+        verify(mockImportService, times(1)).handleNotificationReceived(any[String], any[NodeSeq])
       }
+
+    "return 200 when notification is received and request cannot be processed (import service returns false)" in {
+      when(mockImportService.handleNotificationReceived(any[String], any[NodeSeq])).thenReturn(Future.successful(false))
+
+      val result = route(app, fakeXmlRequestWithHeaders).get
+      status(result) shouldBe OK
+      verify(mockImportService, times(1)).handleNotificationReceived(any[String], any[NodeSeq])
+    }
+
+    "return 200 when notification is received and request doesn't contain a conversation Id)" in {
+
+      val result = route(app, fakeXmlRequestWithNoConversationId).get
+      status(result) shouldBe OK
+      verifyZeroInteractions(mockImportService)
+    }
 
     "return 200 when invalidXMl is sent" in {
 
       val result = route(app, fakeinvalidRequestWithHeaders).get
       status(result) shouldBe OK
-
+      verifyZeroInteractions(mockImportService)
     }
 
     "return 200 when headers not present" in {
 
       val result = route(app, fakeXmlRequest).get
       status(result) shouldBe OK
-
-
+      verifyZeroInteractions(mockImportService)
     }
 
 

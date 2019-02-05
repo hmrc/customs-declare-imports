@@ -31,6 +31,6 @@ case class LocalReferenceNumber(value: String) extends AnyVal
 
 case class Eori(value: String) extends AnyVal
 
-case class ValidatedHeadersRequest(localReferenceNumber: LocalReferenceNumber) extends HasLocalReferenceNumber
+case class ValidatedHeadersSubmissionRequest(localReferenceNumber: LocalReferenceNumber) extends HasLocalReferenceNumber
 
-case class AuthorizedImportRequest[A](eori: Eori, request: Request[A]) extends WrappedRequest[A](request) with HasEori
+case class AuthorizedImportSubmissionRequest[A](eori: Eori, request: Request[A]) extends WrappedRequest[A](request) with HasEori

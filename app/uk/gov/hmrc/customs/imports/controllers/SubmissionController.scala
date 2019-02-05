@@ -22,7 +22,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.customs.imports.config.AppConfig
-import uk.gov.hmrc.customs.imports.models.AuthorizedImportRequest
+import uk.gov.hmrc.customs.imports.models.AuthorizedImportSubmissionRequest
 import uk.gov.hmrc.customs.imports.services.ImportService
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -49,8 +49,8 @@ class SubmissionController @Inject()(appConfig: AppConfig,
     importService.getSubmissions(request.eori.value).map(submissions => Ok(Json.toJson(submissions)))
   }
 
-  private def processRequest()(implicit request: AuthorizedImportRequest[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
-    headerValidator.validateAndExtractHeaders match {
+  private def processRequest()(implicit request: AuthorizedImportSubmissionRequest[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
+    headerValidator.validateAndExtractSubmissionHeaders match {
       case Right(vhr) => request.body.asXml match {
         case Some(xml) =>
           handleDeclarationSubmit(request.eori.value, vhr.localReferenceNumber.value, xml).recoverWith {
