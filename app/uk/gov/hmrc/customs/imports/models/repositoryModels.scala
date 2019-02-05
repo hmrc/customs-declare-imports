@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.customs.imports.models
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{Format, Json, OFormat}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.mongoEntity
@@ -61,11 +61,15 @@ object SubmissionNotification {
 case class DeclarationAction(dateTimeSent: Long, notifications: Seq[SubmissionNotification] = Seq.empty)
 
 object DeclarationAction {
-  implicit val formats = Json.format[DeclarationAction]
+  implicit val formats: OFormat[DeclarationAction] = Json.format[DeclarationAction]
 }
 
-case class Declaration(eori: String, localReferenceNumber: String, submittedDateTime: Long, mrn: Option[String] = None, actions: Seq[DeclarationAction] = Seq.empty)
+case class Declaration(eori: String,
+                       localReferenceNumber: String,
+                       submittedDateTime: Long,
+                       mrn: Option[String] = None,
+                       actions: Seq[DeclarationAction] = Seq.empty)
 
 object Declaration {
-  implicit val formats = Json.format[Declaration]
+  implicit val formats: OFormat[Declaration] = Json.format[Declaration]
 }
