@@ -80,7 +80,16 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
 
   private def updateSubmissionWithMrn(mrn: String, submission: Option[Submission]): Future[Boolean] ={
     submission.fold(Future.successful(false)){ submission =>
-      submissionRepository.updateSubmission(submission.copy(mrn = Some(mrn)))
+      submission.mrn match {
+        case None => {
+          Logger.info(s"updating submission with mrn: $mrn")
+          submissionRepository.updateSubmission(submission.copy(mrn = Some(mrn)))
+        }
+        case Some(existingMrn) => {
+          Logger.info (s"mrn: $existingMrn is populated on submission so not updating with $mrn")
+          Future.successful (false)
+        }
+      }
     }
   }
 
