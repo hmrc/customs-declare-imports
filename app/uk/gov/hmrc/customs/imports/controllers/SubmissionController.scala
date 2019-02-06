@@ -46,7 +46,11 @@ class SubmissionController @Inject()(appConfig: AppConfig,
   }
 
   def getDeclarations(): Action[AnyContent] = authorisedAction(BodyParsers.parse.default) { implicit request =>
-    importService.getSubmissions(request.eori.value).map(submissions => Ok(Json.toJson(submissions)))
+    importService.getSubmissions(request.eori.value).map(submissions => Ok(Json.toJson(submissions))).recover {
+      case e =>
+        Logger.error(s"problem getting declarations ${e.getMessage}")
+        ErrorResponse.ErrorInternalServerError.JsonResult
+    }
   }
 
   private def processRequest()(implicit request: AuthorizedImportSubmissionRequest[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {

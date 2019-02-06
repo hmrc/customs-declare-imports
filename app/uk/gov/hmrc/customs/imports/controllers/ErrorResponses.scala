@@ -56,6 +56,7 @@ object ResponseContents {
 case class ErrorResponse(httpStatusCode: Int, errorCode: String, message: String, content: ResponseContents*) extends Error {
 
   lazy val XmlResult: Result = Status(httpStatusCode)(responseXml).as(ContentTypes.XML)
+  lazy val JsonResult: Result = Status(httpStatusCode)(responseJson).as(ContentTypes.JSON)
 
   private lazy val responseXml: String = "<?xml version='1.0' encoding='UTF-8'?>\n" +
     <errorResponse>
@@ -63,6 +64,14 @@ case class ErrorResponse(httpStatusCode: Int, errorCode: String, message: String
       <message>{message}</message>
     </errorResponse>
 
+  private lazy val errorContent = JsObject(Seq(
+    "code" -> JsString(errorCode),
+    "message" -> JsString(message)))
+
+  private lazy val responseJson: JsValue = content match {
+    case Seq() => errorContent
+    case _ => errorContent + ("errors" -> Json.toJson(content))
+  }
 }
 
 object ErrorResponse extends HttpStatusCodeShortDescriptions {
