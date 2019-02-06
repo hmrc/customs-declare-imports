@@ -18,7 +18,7 @@ package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.customs.imports.config.AppConfig
@@ -45,7 +45,7 @@ class SubmissionController @Inject()(appConfig: AppConfig,
     processRequest
   }
 
-  def getDeclarations(): Action[AnyContent] = authorisedAction(BodyParsers.parse.default) { implicit request =>
+  def getDeclarations: Action[AnyContent] = authorisedAction(BodyParsers.parse.default) { implicit request =>
     importService.getSubmissions(request.eori.value).map(submissions => Ok(Json.toJson(submissions))).recover {
       case e =>
         Logger.error(s"problem getting declarations ${e.getMessage}")

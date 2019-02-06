@@ -34,23 +34,23 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
                               submissionNotificationRepository: SubmissionNotificationRepository,
                               customsDeclarationsConnector: CustomsDeclarationsConnector) {
 
-  def handleDeclarationSubmit(eori: String, localReferenceNumber: String, xml: NodeSeq)(implicit hc: HeaderCarrier): Future[Option[String]] = {
+  def handleDeclarationSubmit(eori: String, localReferenceNumber: String, xml: NodeSeq)
+                             (implicit hc: HeaderCarrier): Future[Option[String]] =
     customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString()).flatMap({ response =>
-      val conversationId = response.conversationId
-      Logger.debug(s"conversationId: ${conversationId}")
-      val submission = Submission(eori, localReferenceNumber, None)
-      submissionRepository
-        .insert(submission)
-        .flatMap(submissionResult => {
-          if (submissionResult.ok) {
-            submissionActionRepository.insert(SubmissionAction(submission.id, conversationId, SubmissionActionType.SUBMISSION))
-              .map(submissionActionResult => Some(conversationId))
-          } else {
-            Future.successful(None)
-          }
-        })
-    })
-  }
+    val conversationId = response.conversationId
+    Logger.debug(s"conversationId: $conversationId")
+    val submission = Submission(eori, localReferenceNumber, None)
+    submissionRepository
+      .insert(submission)
+      .flatMap(submissionResult => {
+        if (submissionResult.ok) {
+          submissionActionRepository.insert(SubmissionAction(submission.id, conversationId, SubmissionActionType.SUBMISSION))
+            .map(_ => Some(conversationId))
+        } else {
+          Future.successful(None)
+        }
+      })
+  })
 
   def getSubmissions(eori: String): Future[Seq[Declaration]] = {
     submissionRepository.findByEori(eori)
@@ -68,42 +68,29 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
 
   }
 
-  private def findSubmissionBySubmissionId(mayBeSubmissionid : Option[BSONObjectID]): Future[Option[Submission]] = {
-    mayBeSubmissionid match {
-      case Some(submissionId: BSONObjectID) => {
-        submissionRepository.findById(submissionId)
-      }
-      case None => Future.successful(None)
-    }
+  private def findSubmissionBySubmissionId(mayBeSubmissionid : Option[BSONObjectID]): Future[Option[Submission]] = mayBeSubmissionid match {
+    case Some(submissionId: BSONObjectID) => submissionRepository.findById(submissionId)
+    case None => Future.successful(None)
   }
 
 
-  private def updateSubmissionWithMrn(mrn: String, submission: Option[Submission]): Future[Boolean] ={
-    submission.fold(Future.successful(false)){ submission =>
-      submission.mrn match {
-        case None => {
-          Logger.info(s"updating submission with mrn: $mrn")
-          submissionRepository.updateSubmission(submission.copy(mrn = Some(mrn)))
-        }
-        case Some(existingMrn) => {
-          Logger.info (s"mrn: $existingMrn is populated on submission so not updating with $mrn")
-          Future.successful (false)
-        }
-      }
+  private def updateSubmissionWithMrn(mrn: String, submission: Option[Submission]): Future[Boolean] = submission.fold(Future.successful(false)){ submission =>
+    submission.mrn match {
+      case None =>
+        Logger.info(s"updating submission with mrn: $mrn")
+        submissionRepository.updateSubmission(submission.copy(mrn = Some(mrn)))
+      case Some(existingMrn) =>
+        Logger.info (s"mrn: $existingMrn is populated on submission so not updating with $mrn")
+        Future.successful (false)
     }
   }
 
-  private def findSubmissionIdByConversationId(conversationId: String): Future[Option[BSONObjectID]] ={
-    submissionActionRepository.findByConversationId(conversationId)
-      .map(submissionActionOption => {
-            submissionActionOption match {
-              case Some(submissionAction) => Some(submissionAction.submissionId)
-              case None => {
-                Logger.error(s"unable to find submission for conversationId: ${conversationId}")
-                None
-              }
-            }
-        })
+  private def findSubmissionIdByConversationId(conversationId: String): Future[Option[BSONObjectID]] = submissionActionRepository
+    .findByConversationId(conversationId).map {
+      case Some(submissionAction) => Some(submissionAction.submissionId)
+      case None =>
+        Logger.error(s"unable to find submission for conversationId: $conversationId")
+        None
   }
 
 
