@@ -109,8 +109,8 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
     "findByEori returns correct persisted submission with nested actions and notifications when there are submissionActions with associated notifications" in {
       await(repo.insert(submission))
 
-      val action1 = SubmissionAction(submission.id, UUID.randomUUID.toString)
-      val action2 = SubmissionAction(submission.id, UUID.randomUUID.toString)
+      val action1 = SubmissionAction(submission.id, UUID.randomUUID.toString, SubmissionActionType.SUBMISSION)
+      val action2 = SubmissionAction(submission.id, UUID.randomUUID.toString, SubmissionActionType.CANCELLATION)
 
       val notification1 = SubmissionNotification(1, action1.conversationId)
       val notification2 = SubmissionNotification(2, action1.conversationId)
