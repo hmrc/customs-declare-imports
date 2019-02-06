@@ -46,28 +46,23 @@ class NotificationController @Inject()(
   def handleNotification(): Action[AnyContent] = Action.async(bodyParser = xmlOrEmptyBody) { implicit request =>
     request.body.asXml match {
       case Some(xml) => processNotification(request.headers.toSimpleMap, xml)
-      case None => {
+      case None =>
         Logger.error("no xml received")
         Future.successful(Ok)
-      }
     }
   }
 
-  private def processNotification(headers: Map[String, String], xml: NodeSeq): Future[Status] = {
-    headerValidator.extractConversatioIdHeader(headers).fold(
-      {
-        Logger.info("invalid headers")
-        Future.successful(Ok)
-      }) {
-      conversationId => {
-        parseAndExtractXmlValues(xml).fold({
-          Future.successful(Ok)
-        }) { vnr =>
-          importService.handleNotificationReceived(conversationId, vnr.functionCode, vnr.mrn,  xml)
-            .map{ _ => Ok }
-        }
+  private def processNotification(headers: Map[String, String], xml: NodeSeq): Future[Status] =
+   headerValidator.extractConversatioIdHeader(headers) match {
+    case Some(conversationId) =>
+      parseAndExtractXmlValues(xml) match {
+        case Some(vnr) => importService.handleNotificationReceived(conversationId, vnr.functionCode, vnr.mrn, xml)
+        case None => None
       }
-    }
+      Future.successful(Ok)
+    case None =>
+      Logger.info("invalid headers")
+      Future.successful(Ok)
   }
 
   private def parseAndExtractXmlValues(xml: NodeSeq): Option[ValidatedNotificationRequest] = {
@@ -82,7 +77,7 @@ class NotificationController @Inject()(
       functionCodeOption match {
         case Some(functionCode) =>
       Logger.debug(s"functionCode $functionCode mrn $mrn extracted")
-      Some(new ValidatedNotificationRequest(functionCode, mrn))
+      Some(ValidatedNotificationRequest(functionCode, mrn))
         case _ =>
       Logger.error("functionCode could not be parsed")
       None
