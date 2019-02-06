@@ -55,24 +55,29 @@ class NotificationController @Inject()(
   private def processNotification(headers: Map[String, String], xml: NodeSeq): Future[Status] =
    headerValidator.extractConversatioIdHeader(headers) match {
     case Some(conversationId) =>
-      parseAndExtractXmlValues(xml) match {
-        case Some(vnr) => importService.handleNotificationReceived(conversationId, vnr.functionCode, vnr.mrn, xml)
-        case None => None
-      }
+      val responses: NodeSeq = xml \ "Response"
+      responses.foreach({ responseXml =>
+        parseAndExtractXmlValues(responseXml) match {
+          case Some(vnr) => importService.handleNotificationReceived(conversationId, vnr.functionCode, vnr.mrn, xml)
+          case None => None
+        }
+      })
+
       Future.successful(Ok)
     case None =>
       Logger.info("invalid headers")
       Future.successful(Ok)
   }
 
-  private def parseAndExtractXmlValues(xml: NodeSeq): Option[ValidatedNotificationRequest] = {
+  private def parseAndExtractXmlValues(responseXml: NodeSeq): Option[ValidatedNotificationRequest] = {
 
-    if(xml.isEmpty){
+    if(responseXml.isEmpty){
       None
     } else {
-      val functionCodeVal = xml \ "Response" \ "FunctionCode" text
+
+      val functionCodeVal =  responseXml\ "FunctionCode" text
       val functionCodeOption = toInt(functionCodeVal)
-      val mrn = xml \ "Declaration" \ "ID" text
+      val mrn = responseXml \ "Declaration" \ "ID" text
 
       functionCodeOption match {
         case Some(functionCode) =>
