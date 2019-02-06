@@ -70,9 +70,9 @@ class NotificationController @Inject()(
     if(xml.isEmpty){
       None
     } else {
-      val functionCodeVal = xml \\ "FunctionCode" text
+      val functionCodeVal = xml \ "Response" \ "FunctionCode" text
       val functionCodeOption = toInt(functionCodeVal)
-      val mrn = xml \\ "ID" text
+      val mrn = xml \ "Declaration" \ "ID" text
 
       functionCodeOption match {
         case Some(functionCode) =>
