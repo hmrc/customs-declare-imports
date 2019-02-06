@@ -16,10 +16,18 @@
 
 package uk.gov.hmrc.customs.imports.models
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{Format, Json, Reads, Writes}
 import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.customs.imports.models.SubmissionActionType.SubmissionActionType
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.mongoEntity
+
+object SubmissionActionType extends Enumeration {
+  type SubmissionActionType = Value
+  val SUBMISSION, CANCELLATION = Value
+
+  implicit val format = Format(Reads.enumNameReads(SubmissionActionType), Writes.enumNameWrites)
+}
 
 case class Submission( eori: String,
                        localReferenceNumber: String,
@@ -34,10 +42,11 @@ object Submission {
   }
 }
 
-case class SubmissionAction( submissionId : BSONObjectID,
-                             conversationId: String,
-                             dateTimeSent: Long = System.currentTimeMillis(),
-                             id: BSONObjectID = BSONObjectID.generate() )
+case class SubmissionAction(submissionId : BSONObjectID,
+                            conversationId: String,
+                            actionType: SubmissionActionType,
+                            dateTimeSent: Long = System.currentTimeMillis(),
+                            id: BSONObjectID = BSONObjectID.generate() )
 
 object SubmissionAction {
   implicit val objectIdFormats: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats

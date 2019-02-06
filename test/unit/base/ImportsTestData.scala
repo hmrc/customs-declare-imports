@@ -48,7 +48,7 @@ trait ImportsTestData {
   val submission = Submission(eori, lrn, Some(mrn))
   val submissionNoMrn = Submission(eori, lrn, None)
   val conversationId = "58494f63-5749-4a62-8193-0452fdc7263b"
-  val submissionAction = SubmissionAction(BSONObjectID.generate(), conversationId)
+  val submissionAction = SubmissionAction(BSONObjectID.generate(), conversationId, SubmissionActionType.SUBMISSION)
 
   val seqSubmissions: Seq[Submission] = Seq(submission)
 
@@ -58,10 +58,10 @@ trait ImportsTestData {
 
   val cancelledDeclaration = Declaration(eori, "LRN1", now.minusDays(5), Some("MRN1"),
     actions = Seq(
-      DeclarationAction(now.minusDays(2), notifications = Seq(DeclarationNotification(1, randomConversationId, now.minusDays(2)))),
-      DeclarationAction(now.minusDays(1), notifications = Seq(DeclarationNotification(2, randomConversationId, now.minusDays(1))))))
+      DeclarationAction(now.minusDays(2), SubmissionActionType.SUBMISSION, notifications = Seq(DeclarationNotification(1, randomConversationId, now.minusDays(2)))),
+      DeclarationAction(now.minusDays(1), SubmissionActionType.CANCELLATION, notifications = Seq(DeclarationNotification(2, randomConversationId, now.minusDays(1))))))
   val unacknowledgedDeclaration = Declaration(eori, "LRN2", now.minusDays(2), None,
-    actions = Seq(DeclarationAction(now.minusDays(2))))
+    actions = Seq(DeclarationAction(now.minusDays(2), SubmissionActionType.SUBMISSION)))
   val newlySubmittedDeclaration = Declaration(eori, "LRN3", now, None, Seq.empty)
 
   val functionCodeACK = 10

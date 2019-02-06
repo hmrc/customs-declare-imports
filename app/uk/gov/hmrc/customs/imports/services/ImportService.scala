@@ -20,7 +20,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
-import uk.gov.hmrc.customs.imports.models.{Declaration, Submission, SubmissionAction, SubmissionNotification}
+import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.customs.imports.repositories.{SubmissionActionRepository, SubmissionNotificationRepository, SubmissionRepository}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -43,7 +43,7 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
         .insert(submission)
         .flatMap(submissionResult => {
           if (submissionResult.ok) {
-            submissionActionRepository.insert(SubmissionAction(submission.id, conversationId))
+            submissionActionRepository.insert(SubmissionAction(submission.id, conversationId, SubmissionActionType.SUBMISSION))
               .map(submissionActionResult => Some(conversationId))
           } else {
             Future.successful(None)
