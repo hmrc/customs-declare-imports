@@ -53,7 +53,9 @@ class SubmissionController @Inject()(appConfig: AppConfig,
     }
   }
 
-  private def processRequest()(implicit request: AuthorizedImportSubmissionRequest[AnyContent], hc: HeaderCarrier, headers: Map[String, String]): Future[Result] = {
+  private def processRequest()(implicit request: AuthorizedImportSubmissionRequest[AnyContent],
+                                         hc: HeaderCarrier,
+                                         headers: Map[String, String]): Future[Result] = {
     headerValidator.validateAndExtractSubmissionHeaders match {
       case Right(vhr) => request.body.asXml match {
         case Some(xml) =>
