@@ -30,11 +30,9 @@ import scala.util.Try
 import scala.xml.NodeSeq
 
 @Singleton
-class NotificationController @Inject()(
-                                      appConfig: AppConfig,
-                                      headerValidator: HeaderValidator,
-                                      importService: ImportService
-) extends BaseController {
+class NotificationController @Inject()(appConfig: AppConfig,
+                                       headerValidator: HeaderValidator,
+                                       importService: ImportService) extends BaseController {
 
   private def xmlOrEmptyBody: BodyParser[AnyContent] = BodyParser(rq => parse.xml(rq).map {
     case Right(xml) =>
@@ -44,52 +42,63 @@ class NotificationController @Inject()(
   })
 
   def handleNotification(): Action[AnyContent] = Action.async(bodyParser = xmlOrEmptyBody) { implicit request =>
-    request.body.asXml match {
-      case Some(xml) => processNotification(request.headers.toSimpleMap, xml)
-      case None =>
-        Logger.error("no xml received")
-        Future.successful(Ok)
+    hasNotificationBearerToken match {
+      case Right(_) =>
+        request.body.asXml match {
+          case Some(xml) => processNotification(request.headers.toSimpleMap, xml)
+          case None =>
+            Logger.error("no xml received")
+            Future.successful(Ok)
+        }
+      case Left(error) =>
+        Logger.error("Invalid bearer token")
+        Future.successful(error.XmlResult)
     }
   }
 
   private def processNotification(headers: Map[String, String], xml: NodeSeq): Future[Status] =
-   headerValidator.extractConversatioIdHeader(headers) match {
-    case Some(conversationId) =>
-      val responses: NodeSeq = xml \ "Response"
-      responses.foreach({ responseXml =>
-        parseAndExtractXmlValues(responseXml) match {
-          case Some(vnr) => importService.handleNotificationReceived(conversationId, vnr.functionCode, vnr.mrn, xml)
-          case None => None
-        }
-      })
+    headerValidator.extractConversatioIdHeader(headers) match {
+      case Some(conversationId) =>
+        val responses: NodeSeq = xml \ "Response"
+        responses.foreach({ responseXml =>
+          parseAndExtractXmlValues(responseXml) match {
+            case Some(vnr) => importService.handleNotificationReceived(conversationId, vnr.functionCode, vnr.mrn, xml)
+            case None => None
+          }
+        })
 
-      Future.successful(Ok)
-    case None =>
-      Logger.info("invalid headers")
-      Future.successful(Ok)
-  }
+        Future.successful(Ok)
+      case None =>
+        Logger.info("invalid headers")
+        Future.successful(Ok)
+    }
 
   private def parseAndExtractXmlValues(responseXml: NodeSeq): Option[ValidatedNotificationRequest] = {
 
-    if(responseXml.isEmpty){
+    if (responseXml.isEmpty) {
       None
     } else {
 
-      val functionCodeVal =  responseXml\ "FunctionCode" text
+      val functionCodeVal = responseXml \ "FunctionCode" text
       val functionCodeOption = toInt(functionCodeVal)
       val mrn = responseXml \ "Declaration" \ "ID" text
 
       functionCodeOption match {
         case Some(functionCode) =>
-      Logger.debug(s"functionCode $functionCode mrn $mrn extracted")
-      Some(ValidatedNotificationRequest(functionCode, mrn))
+          Logger.debug(s"functionCode $functionCode mrn $mrn extracted")
+          Some(ValidatedNotificationRequest(functionCode, mrn))
         case _ =>
-      Logger.error("functionCode could not be parsed")
-      None
+          Logger.error("functionCode could not be parsed")
+          None
       }
     }
   }
 
   private def toInt(s: String): Option[Int] = Try[Int](s.toInt).toOption
+
+  private def hasNotificationBearerToken[A](implicit request: Request[A]): Either[ErrorResponse, String] = request.headers.get("Authorization") match {
+    case Some(token) if token == appConfig.notificationBearerToken => Right(token)
+    case _ => Left(ErrorResponse.errorUnauthorized("Invalid Bearer Token"))
+  }
 
 }

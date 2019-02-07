@@ -29,6 +29,7 @@ class AppConfigSpec extends UnitSpec with MockitoSugar {
       |microservice.services.customs-declarations.port=6000
       |microservice.services.customs-declarations.api-version=1.0
       |microservice.services.customs-declarations.submit-uri=/declarations
+      |microservice.services.customs-declarations.bearer-token=Bearer DummyBearerToken
     """.stripMargin)
 
   private val emptyAppConfig: Config = ConfigFactory.parseString("")
@@ -49,6 +50,7 @@ class AppConfigSpec extends UnitSpec with MockitoSugar {
       configService.customsDeclarationsApiVersion shouldBe "1.0"
       configService.submitImportDeclarationUri shouldBe "/declarations"
       configService.customsDeclarationsBaseUrl shouldBe "http://remotedec-api:6000"
+      configService.notificationBearerToken shouldBe "Bearer DummyBearerToken"
     }
 
     "throw an exception when mandatory configuration is invalid" in {
@@ -62,6 +64,9 @@ class AppConfigSpec extends UnitSpec with MockitoSugar {
 
       val caught4: RuntimeException = intercept[RuntimeException](configService.submitImportDeclarationUri)
       caught4.getMessage shouldBe "Could not find config key 'microservice.services.customs-declarations.submit-uri'"
+
+      val caught5: RuntimeException = intercept[RuntimeException](configService.notificationBearerToken)
+      caught5.getMessage shouldBe "Could not find config key 'microservice.services.customs-declarations.bearer-token'"
     }
 
     "developerHubClientId" should {

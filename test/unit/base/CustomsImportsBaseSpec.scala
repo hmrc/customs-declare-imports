@@ -51,6 +51,7 @@ trait CustomsImportsBaseSpec
   val mockActorSystem: ActorSystem = mock[ActorSystem]
   val mockDeclarationsApiConnector: CustomsDeclarationsConnector = mock[CustomsDeclarationsConnector]
   val mockImportService: ImportService = mock[ImportService]
+  val mockAppConfig: AppConfig = mock[AppConfig]
 
   def injector: Injector = app.injector
 
@@ -65,7 +66,8 @@ trait CustomsImportsBaseSpec
         bind[SubmissionRepository].to(mockSubmissionRepository),
         bind[SubmissionNotificationRepository].to(mockSubmissionNotificationRepository),
         bind[CustomsDeclarationsConnector].to(mockDeclarationsApiConnector),
-        bind[ImportService].to(mockImportService)
+        bind[ImportService].to(mockImportService),
+        bind[AppConfig].to(mockAppConfig)
       )
       .build()
 
