@@ -110,7 +110,6 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
     }
 
 
-
     "save notification Data in repository but do not update submission when MRN is set submissionAction and Submission exist" in new SetUp() {
       val mockWriteResult: WriteResult = mock[WriteResult]
       when(mockSubmissionRepo.findById(any[BSONObjectID],any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(Some(submission)))

@@ -16,6 +16,9 @@
 
 package unit.controllers
 
+import java.util
+
+import org.mockito.ArgumentCaptor
 import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers.any
 import org.scalatest.BeforeAndAfterEach
@@ -39,6 +42,10 @@ class NotificationControllerSpec extends CustomsImportsBaseSpec with ImportsTest
   val fakeXmlRequest: FakeRequest[String] = FakeRequest("POST", saveUri)
     .withBody(exampleAcceptNotification("01").toString).withHeaders(CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
 
+  val fakeXmlRequestWithMultipleNotifications: FakeRequest[String] = FakeRequest("POST", saveUri)
+    .withBody(notificationWithMulitpleResponses.toString).withHeaders(CustomsHeaderNames.XConversationIdName -> conversationId,
+    CONTENT_TYPE -> ContentTypes.XML(Codec.utf_8))
+
 
   val fakeXmlRequestWithHeaders: FakeRequest[String] = fakeXmlRequest
     .withHeaders(CustomsHeaderNames.XConversationIdName -> conversationId,
@@ -46,6 +53,7 @@ class NotificationControllerSpec extends CustomsImportsBaseSpec with ImportsTest
 
   val fakeXmlRequestInvalidFunctionCode: FakeRequest[String] = fakeXmlRequestWithHeaders
     .withBody(exampleAcceptNotification("NAN").toString)
+
 
 
   val fakeXmlRequestWithNoConversationId: FakeRequest[String] = fakeXmlRequest
@@ -70,6 +78,26 @@ class NotificationControllerSpec extends CustomsImportsBaseSpec with ImportsTest
           status(result) shouldBe OK
         verify(mockImportService, times(1)).handleNotificationReceived(any[String], any[Int], any[String], any[NodeSeq])
       }
+
+    "return 200 when mulitple notifications are received and request is processed, import service called 3 times" in {
+      when(mockImportService.handleNotificationReceived(any[String], any[Int], any[String], any[NodeSeq])).thenReturn(Future.successful(true))
+
+      val mrnCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
+      val functionCodeCaptor: ArgumentCaptor[Int] = ArgumentCaptor.forClass(classOf[Int])
+      val result = route(app, fakeXmlRequestWithMultipleNotifications).get
+      status(result) shouldBe OK
+      verify(mockImportService, times(3)).handleNotificationReceived(any[String], functionCodeCaptor.capture(), mrnCaptor.capture(), any[NodeSeq])
+      val functionCodes = functionCodeCaptor.getAllValues
+      functionCodes.get(0) shouldBe 1
+      functionCodes.get(1) shouldBe 13
+      functionCodes.get(2) shouldBe 9
+
+
+      mrnCaptor.getAllValues.get(0) shouldBe "18GBJCM3USAFD2WD51"
+      mrnCaptor.getAllValues.get(1) shouldBe "18GBJCM3USAFDHGJGJHG1"
+      mrnCaptor.getAllValues.get(2) shouldBe "18GBJCM3USADGHDGHD"
+
+    }
 
     "return 200 when notification is received and request cannot be processed (import service returns false)" in {
       when(mockImportService.handleNotificationReceived(any[String], any[Int], any[String], any[NodeSeq])).thenReturn(Future.successful(false))
