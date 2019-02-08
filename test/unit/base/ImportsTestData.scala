@@ -103,6 +103,8 @@ trait ImportsTestData {
 
   def randomConversationId: String = UUID.randomUUID().toString
 
+  def randomCancellation = Cancellation(mrn = randomString(35), reasonCode = 1, description = randomString(50))
+
   protected def randomString(length: Int): String = Random.alphanumeric.take(length).mkString
 
   def exampleAcceptNotification(functionCode :String) = <_2:MetaData xmlns:_2="urn:wco:datamodel:WCO:DocumentMetaData-DMS:2">

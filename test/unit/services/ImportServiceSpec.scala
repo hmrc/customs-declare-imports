@@ -17,16 +17,19 @@
 package unit.services
 
 import org.joda.time.DateTime
-import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers._
+import org.mockito.{ArgumentCaptor, ArgumentMatcher}
+import org.mockito.ArgumentMatchers.{eq => meq, _}
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import reactivemongo.api.ReadPreference
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.customs.imports.connectors.{CustomsDeclarationsConnector, CustomsDeclarationsResponse}
-import uk.gov.hmrc.customs.imports.models.{Declaration, Submission, SubmissionAction, SubmissionNotification}
+import uk.gov.hmrc.customs.imports.controllers.ErrorResponse
+import uk.gov.hmrc.customs.imports.models.SubmissionActionType.SubmissionActionType
+import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.customs.imports.repositories.{SubmissionActionRepository, SubmissionNotificationRepository, SubmissionRepository}
 import uk.gov.hmrc.customs.imports.services.ImportService
 import uk.gov.hmrc.http.HeaderCarrier
@@ -35,6 +38,7 @@ import unit.base.ImportsTestData
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.Elem
+import scala.xml.Utility.trim
 
 class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures with ImportsTestData {
 
@@ -42,30 +46,29 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
     val mockSubmissionRepo: SubmissionRepository = mock[SubmissionRepository]
     val mockSubmissionActionRepo: SubmissionActionRepository = mock[SubmissionActionRepository]
     val mockSubmissionNotificationRepo: SubmissionNotificationRepository = mock[SubmissionNotificationRepository]
-    //(withSettings().verboseLogging())
     val mockCustomsDeclarationsConnector: CustomsDeclarationsConnector = mock[CustomsDeclarationsConnector]
     implicit val hc: HeaderCarrier = mock[HeaderCarrier]
     val testObj = new ImportService(mockSubmissionRepo,
-                                    mockSubmissionActionRepo,
-                                    mockSubmissionNotificationRepo,
-                                    mockCustomsDeclarationsConnector)
+      mockSubmissionActionRepo,
+      mockSubmissionNotificationRepo,
+      mockCustomsDeclarationsConnector)
   }
 
-  "ImportService" should {
+  "handleDeclarationSubmit" should {
     "save submission Data in repository" in new SetUp() {
       val mockWriteResult: WriteResult = mock[WriteResult]
       val xmlVal: Elem = <iamxml></iamxml>
       val conversationId = randomConversationId
 
-      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
+      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(CustomsDeclarationsResponse(conversationId)))
       when(mockSubmissionRepo.insert(any[Submission])(any[ExecutionContext])).thenReturn(Future.successful(mockWriteResult))
       when(mockSubmissionActionRepo.insert(any[SubmissionAction])(any[ExecutionContext])).thenReturn(Future.successful(mockWriteResult))
       when(mockWriteResult.ok).thenReturn(true)
 
-      val result: Option[String] = await(testObj.handleDeclarationSubmit(declarantEoriValue, declarantLrnValue,  xmlVal))
+      val result: Option[String] = await(testObj.handleDeclarationSubmit(declarantEoriValue, declarantLrnValue, xmlVal))
 
-      verify(mockCustomsDeclarationsConnector, times(1)).submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext])
+      verify(mockCustomsDeclarationsConnector, times(1)).submitImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext])
       verify(mockSubmissionRepo, times(1)).insert(any[Submission])(any[ExecutionContext])
       verify(mockSubmissionActionRepo, times(1)).insert(any[SubmissionAction])(any[ExecutionContext])
       result shouldBe Some(conversationId)
@@ -76,22 +79,25 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       val xmlVal: Elem = <iamxml></iamxml>
       val conversationId = randomConversationId
 
-      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext]))
+      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(CustomsDeclarationsResponse(conversationId)))
       when(mockSubmissionRepo.insert(any[Submission])(any[ExecutionContext])).thenReturn(Future.successful(mockSubmissionWriteResult))
       when(mockSubmissionWriteResult.ok).thenReturn(false)
 
-      val result: Option[String] = await(testObj.handleDeclarationSubmit(declarantEoriValue, declarantLrnValue,  xmlVal))
+      val result: Option[String] = await(testObj.handleDeclarationSubmit(declarantEoriValue, declarantLrnValue, xmlVal))
 
-      verify(mockCustomsDeclarationsConnector, times(1)).submitImportDeclaration(any[String], any[String])(any[HeaderCarrier],any[ExecutionContext])
+      verify(mockCustomsDeclarationsConnector, times(1)).submitImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext])
       verify(mockSubmissionRepo, times(1)).insert(any[Submission])(any[ExecutionContext])
       verifyZeroInteractions(mockSubmissionActionRepo)
       result shouldBe None
     }
+  }
+
+  "handleNotificationReceived" should {
 
     "save notification Data in repository when submissionAction and Submission exist" in new SetUp() {
       val mockWriteResult: WriteResult = mock[WriteResult]
-      when(mockSubmissionRepo.findById(any[BSONObjectID],any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(Some(submissionNoMrn)))
+      when(mockSubmissionRepo.findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(Some(submissionNoMrn)))
       when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(Some(submissionAction)))
       when(mockSubmissionRepo.updateSubmission(any[Submission])).thenReturn(Future.successful(true))
       when(mockWriteResult.ok).thenReturn(true)
@@ -105,14 +111,12 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       verify(mockSubmissionNotificationRepo, times(1)).insert(any[SubmissionNotification])(any[ExecutionContext])
 
       submissionCaptor.getValue.mrn shouldBe Some(mrn)
-      result should be (true)
-
+      result should be(true)
     }
-
 
     "save notification Data in repository but do not update submission when MRN is set submissionAction and Submission exist" in new SetUp() {
       val mockWriteResult: WriteResult = mock[WriteResult]
-      when(mockSubmissionRepo.findById(any[BSONObjectID],any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(Some(submission)))
+      when(mockSubmissionRepo.findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(Some(submission)))
       when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(Some(submissionAction)))
       when(mockSubmissionRepo.updateSubmission(any[Submission])).thenReturn(Future.successful(true))
       when(mockWriteResult.ok).thenReturn(true)
@@ -124,20 +128,10 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       verify(mockSubmissionRepo, times(0)).updateSubmission(any[Submission])
       verify(mockSubmissionNotificationRepo, times(1)).insert(any[SubmissionNotification])(any[ExecutionContext])
 
-      result should be (true)
-
-    }
-
-    "return submissions from submission repository when called with Eori" in new SetUp (){
-      val submissions = Seq(Declaration(declarantEoriValue, declarantLrnValue, DateTime.now, Some(mrn), Seq.empty))
-      when(mockSubmissionRepo.findByEori(declarantEoriValue)).thenReturn(Future.successful(submissions))
-      val result: Seq[Declaration] = await(testObj.getSubmissions(declarantEoriValue))
-
-      result.size should be(1)
+      result should be(true)
     }
 
     "return false and do not save notification when submissionAction does not exist" in new SetUp() {
-
       when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(None))
 
       val result: Boolean = await(testObj.handleNotificationReceived(conversationId, 1, mrn, exampleAcceptNotification("01")))
@@ -145,41 +139,129 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
       verifyZeroInteractions(mockSubmissionRepo)
       verifyZeroInteractions(mockSubmissionNotificationRepo)
-      result should be (false)
-
+      result should be(false)
     }
 
     "return false and do not save notification when submission does not exist" in new SetUp() {
-      when(mockSubmissionRepo.findById(any[BSONObjectID],any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(None))
+      when(mockSubmissionRepo.findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(None))
       when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(Some(submissionAction)))
 
-      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, 1, mrn,  exampleAcceptNotification("01")))
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, 1, mrn, exampleAcceptNotification("01")))
 
       verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
       verify(mockSubmissionRepo, times(1)).findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])
       verifyZeroInteractions(mockSubmissionNotificationRepo)
-      result should be (false)
-
+      result should be(false)
     }
 
     "save notification in repository even when update submission fails" in new SetUp() {
       val mockWriteResult: WriteResult = mock[WriteResult]
-      when(mockSubmissionRepo.findById(any[BSONObjectID],any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(Some(submissionNoMrn)))
+      when(mockSubmissionRepo.findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])).thenReturn(Future.successful(Some(submissionNoMrn)))
       when(mockSubmissionActionRepo.findByConversationId(any[String])).thenReturn(Future.successful(Some(submissionAction)))
       when(mockSubmissionRepo.updateSubmission(any[Submission])).thenReturn(Future.successful(false))
       when(mockWriteResult.ok).thenReturn(true)
       when(mockSubmissionNotificationRepo.insert(any[SubmissionNotification])(any[ExecutionContext])).thenReturn(Future.successful(mockWriteResult))
 
-      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, 1, mrn,  exampleAcceptNotification("01")))
+      val result: Boolean = await(testObj.handleNotificationReceived(conversationId, 1, mrn, exampleAcceptNotification("01")))
 
       verify(mockSubmissionActionRepo, times(1)).findByConversationId(any[String])
       verify(mockSubmissionRepo, times(1)).findById(any[BSONObjectID], any[ReadPreference])(any[ExecutionContext])
       verify(mockSubmissionNotificationRepo, times(1)).insert(any[SubmissionNotification])(any[ExecutionContext])
-      result should be (true)
+      result should be(true)
+    }
+  }
 
+  "getSubmissions" should {
+    "return submissions from submission repository when called with Eori" in new SetUp() {
+      val submissions = Seq(Declaration(declarantEoriValue, declarantLrnValue, DateTime.now, Some(mrn), Seq.empty))
+      when(mockSubmissionRepo.findByEori(declarantEoriValue)).thenReturn(Future.successful(submissions))
+      val result: Seq[Declaration] = await(testObj.getSubmissions(declarantEoriValue))
+
+      result.size should be(1)
+    }
+  }
+
+  "cancelDeclaration" should {
+    val description = "a description"
+    val changeReasonCode = 1
+    val cancellation = Cancellation(mrn, changeReasonCode, description)
+    val mockWriteResult: WriteResult = mock[WriteResult]
+    val expectedCancellationXml = trim(<MetaData xmlns="urn:wco:datamodel:WCO:DocumentMetaData-DMS:2">
+        <wstxns1:Declaration xmlns:wstxns1="urn:wco:datamodel:WCO:DEC-DMS:2">
+          <wstxns1:FunctionCode>13</wstxns1:FunctionCode>
+          <wstxns1:FunctionalReferenceID>{lrn}</wstxns1:FunctionalReferenceID>
+          <wstxns1:ID>{mrn}</wstxns1:ID>
+          <wstxns1:TypeCode>INV</wstxns1:TypeCode>
+          <wstxns1:AdditionalInformation>
+            <wstxns1:StatementDescription>{description}</wstxns1:StatementDescription>
+          </wstxns1:AdditionalInformation>
+          <wstxns1:Amendment>
+            <wstxns1:ChangeReasonCode>{changeReasonCode}</wstxns1:ChangeReasonCode>
+          </wstxns1:Amendment>
+        </wstxns1:Declaration>
+    </MetaData>)
+
+    "return an error when the MRN does not relate to the requesting EORI" in new SetUp {
+      when(mockSubmissionRepo.getByEoriAndMrn(eori, mrn)).thenReturn(Future.successful(None))
+
+      val result = await(testObj.cancelDeclaration(eori, lrn, cancellation))
+
+      result shouldBe Left(ErrorResponse.ErrorGenericBadRequest)
+
+      verify(mockCustomsDeclarationsConnector, never()).submitImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockSubmissionActionRepo, never()).insert(any[SubmissionAction])(any[ExecutionContext])
     }
 
+    "return an error when the MRN is for an existing submission for the request EORI but the cancellation request fails" in new SetUp {
+      when(mockSubmissionRepo.getByEoriAndMrn(eori, mrn)).thenReturn(Future.successful(Some(submission)))
+      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any(), any())(any(), any()))
+        .thenReturn(Future.failed(new RuntimeException("Internal Server Error")))
 
+      val result = await(testObj.cancelDeclaration(eori, lrn, cancellation))
 
+      result shouldBe Left(ErrorResponse.ErrorInternalServerError)
+
+      verify(mockCustomsDeclarationsConnector).submitImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockSubmissionActionRepo, never()).insert(any[SubmissionAction])(any[ExecutionContext])
+    }
+
+    "return an error when the MRN is for an existing submission for the request EORI but the persistence fails" in new SetUp {
+      when(mockSubmissionRepo.getByEoriAndMrn(eori, mrn)).thenReturn(Future.successful(Some(submission)))
+      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any(), any())(any(), any()))
+        .thenReturn(Future.successful(CustomsDeclarationsResponse(conversationId)))
+      when(mockSubmissionActionRepo.insert(any())(any())).thenReturn(mockWriteResult)
+      when(mockWriteResult.ok).thenReturn(false)
+
+      val result = await(testObj.cancelDeclaration(eori, lrn, cancellation))
+
+      result shouldBe Left(ErrorResponse.ErrorInternalServerError)
+
+      verify(mockCustomsDeclarationsConnector).submitImportDeclaration(meq(eori), meq(expectedCancellationXml.toString))(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockSubmissionActionRepo).insert(any[SubmissionAction])(any[ExecutionContext])
+    }
+
+    "persist the submissionAction and return the conversationId when MRN exists and the cancellation request is successful" in new SetUp {
+      val expectedSubmissionAction = SubmissionAction(submission.id, conversationId, SubmissionActionType.CANCELLATION)
+      when(mockSubmissionRepo.getByEoriAndMrn(eori, mrn)).thenReturn(Future.successful(Some(submission)))
+      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any(), any())(any(), any()))
+        .thenReturn(Future.successful(CustomsDeclarationsResponse(conversationId)))
+      when(mockSubmissionActionRepo.insert(any())(any())).thenReturn(mockWriteResult)
+      when(mockWriteResult.ok).thenReturn(true)
+
+      val result = await(testObj.cancelDeclaration(eori, lrn, cancellation))
+
+      result shouldBe Right(conversationId)
+
+      verify(mockCustomsDeclarationsConnector).submitImportDeclaration(meq(eori), meq(expectedCancellationXml.toString))(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockSubmissionActionRepo).insert(argThat(IsExpectedSubmissionAction(expectedSubmissionAction)))(any[ExecutionContext])
+    }
+
+    case class IsExpectedSubmissionAction(sa: SubmissionAction) extends ArgumentMatcher[SubmissionAction] {
+      def matches(request: SubmissionAction): Boolean = request match {
+        case SubmissionAction(submissionId, conversationId, actionType, _, _) =>
+          submissionId == sa.submissionId && conversationId == sa.conversationId && actionType == sa.actionType
+        case _ => false
+      }
+    }
   }
 }
