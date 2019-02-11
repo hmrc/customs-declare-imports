@@ -19,10 +19,12 @@ package uk.gov.hmrc.customs.imports.services
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
+import uk.gov.hmrc.customs.imports.connectors.{CustomsDeclarationsConnector, CustomsDeclarationsResponse}
+import uk.gov.hmrc.customs.imports.controllers.ErrorResponse
 import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.customs.imports.repositories.{SubmissionActionRepository, SubmissionNotificationRepository, SubmissionRepository}
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.wco.dec.{AdditionalInformation, Amendment, MetaData, Declaration => WcoDeclaration}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -56,8 +58,6 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
     submissionRepository.findByEori(eori)
   }
 
-
-
   def handleNotificationReceived(conversationId: String, functionCode: Int, mrn: String, xml: NodeSeq): Future[Boolean] = {
     for {
       submissionId <- findSubmissionIdByConversationId(conversationId)
@@ -68,11 +68,49 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
 
   }
 
+  def cancelDeclaration(eori: String, lrn: String, cancellation: Cancellation)(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, String]] = {
+    lazy val xml = MetaData(
+      declaration = Some(WcoDeclaration(
+        functionCode = Some(13),
+        functionalReferenceId = Some(lrn),
+        id = Some(cancellation.mrn),
+        typeCode = Some("INV"),
+        additionalInformations = Seq(AdditionalInformation(
+          statementDescription = Some(cancellation.description))),
+        amendments = Seq(Amendment(
+          changeReasonCode = Some(cancellation.reasonCode.toString)
+        ))))).toXml
+
+    case object InvalidMrn extends RuntimeException
+
+    def getSubmissionId: Future[BSONObjectID] = submissionRepository.getByEoriAndMrn(eori, cancellation.mrn).map {
+      case Some(submission) => submission.id
+      case _ => throw InvalidMrn
+    }
+
+    def requestCancellation: Future[String] = customsDeclarationsConnector.submitImportDeclaration(eori, xml).map(_.conversationId)
+
+    def createSubmissionAction(submissionId: BSONObjectID, conversationId: String): Future[Either[ErrorResponse, String]] =
+      submissionActionRepository.insert(SubmissionAction(submissionId, conversationId, SubmissionActionType.CANCELLATION)).map { result =>
+        if (result.ok) Right(conversationId) else Left(ErrorResponse.ErrorInternalServerError)
+      }
+
+    (for {
+      submissionId <- getSubmissionId
+      conversationId <- requestCancellation
+      persist <- createSubmissionAction(submissionId, conversationId)
+    } yield persist).recover {
+      case InvalidMrn => Left(ErrorResponse.ErrorGenericBadRequest)
+      case e =>
+        Logger.error(s"Error cancelling submission: ${e.getMessage}}")
+        Left(ErrorResponse.ErrorInternalServerError)
+    }
+  }
+
   private def findSubmissionBySubmissionId(mayBeSubmissionid : Option[BSONObjectID]): Future[Option[Submission]] = mayBeSubmissionid match {
     case Some(submissionId: BSONObjectID) => submissionRepository.findById(submissionId)
     case None => Future.successful(None)
   }
-
 
   private def updateSubmissionWithMrn(mrn: String, submission: Option[Submission]): Future[Boolean] = submission.fold(Future.successful(false)){ submission =>
     submission.mrn match {

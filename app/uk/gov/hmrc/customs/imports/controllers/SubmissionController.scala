@@ -18,11 +18,11 @@ package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, JsValue}
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.customs.imports.config.AppConfig
-import uk.gov.hmrc.customs.imports.models.AuthorizedImportSubmissionRequest
+import uk.gov.hmrc.customs.imports.models.{AuthorizedImportSubmissionRequest, Cancellation}
 import uk.gov.hmrc.customs.imports.services.ImportService
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -50,6 +50,31 @@ class SubmissionController @Inject()(appConfig: AppConfig,
       case e =>
         Logger.error(s"problem getting declarations ${e.getMessage}")
         ErrorResponse.ErrorInternalServerError.JsonResult
+    }
+  }
+
+  def cancelDeclaration: Action[JsValue] = authorisedAction(BodyParsers.parse.json) { implicit request =>
+    def sendCancellation(eori: String, lrn: String, cancellation: Cancellation) = {
+      importService.cancelDeclaration(eori, lrn, cancellation).map {
+        case Right(conversationId) => Accepted.withHeaders("X-Conversation-ID" -> conversationId)
+        case Left(error) => error.JsonResult
+      } recover {
+        case e: Exception =>
+          Logger.error(s"problem calling declaration api ${e.getMessage}")
+          ErrorResponse.ErrorInternalServerError.JsonResult
+      }
+    }
+
+    implicit val headers: Map[String, String] = request.headers.toSimpleMap
+
+    headerValidator.validateAndExtractSubmissionHeaders match {
+      case Right(vhr) =>
+        request.body.validate[Cancellation].fold(
+          _ => Future.successful(ErrorResponse.ErrorInvalidPayload.JsonResult),
+          cancellation => sendCancellation(request.eori.value, vhr.localReferenceNumber.value, cancellation))
+      case Left(error) =>
+        Logger.error("Invalid Headers found")
+        Future.successful(error.XmlResult)
     }
   }
 

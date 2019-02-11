@@ -24,7 +24,7 @@ import uk.gov.hmrc.customs.imports.models.ValidatedNotificationRequest
 import uk.gov.hmrc.customs.imports.services.ImportService
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Try
 import scala.xml.NodeSeq
@@ -32,7 +32,7 @@ import scala.xml.NodeSeq
 @Singleton
 class NotificationController @Inject()(appConfig: AppConfig,
                                        headerValidator: HeaderValidator,
-                                       importService: ImportService) extends BaseController {
+                                       importService: ImportService)(implicit ec: ExecutionContext) extends BaseController {
 
   private def xmlOrEmptyBody: BodyParser[AnyContent] = BodyParser(rq => parse.xml(rq).map {
     case Right(xml) =>
