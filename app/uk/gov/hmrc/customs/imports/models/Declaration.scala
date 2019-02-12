@@ -27,7 +27,7 @@ case class DeclarationAction(dateTimeSent: DateTime, actionType: SubmissionActio
 case class Declaration(eori: String, localReferenceNumber: String, submittedDateTime: DateTime, mrn: Option[String] = None, actions: Seq[DeclarationAction] = Seq.empty)
 
 object Declaration {
-  implicit val dateTimeWrites = Writes.jodaDateWrites("yyyy-MM-dd'T'HH:mm:ss'Z'")
+  implicit val dateTimeWrites = Writes.jodaDateWrites("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
   implicit val formatNotification = Json.format[DeclarationNotification]
   implicit val formatAction = Json.format[DeclarationAction]
   implicit val formatDeclaration = Json.format[Declaration]
