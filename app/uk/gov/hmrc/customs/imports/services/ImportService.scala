@@ -68,11 +68,10 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
 
   }
 
-  def cancelDeclaration(eori: String, lrn: String, cancellation: Cancellation)(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, String]] = {
+  def cancelDeclaration(eori: String, cancellation: Cancellation)(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, String]] = {
     lazy val xml = MetaData(
       declaration = Some(WcoDeclaration(
         functionCode = Some(13),
-        functionalReferenceId = Some(lrn),
         id = Some(cancellation.mrn),
         typeCode = Some("INV"),
         additionalInformations = Seq(AdditionalInformation(
