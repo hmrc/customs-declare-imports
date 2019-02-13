@@ -56,7 +56,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
     .withHeaders(CustomsHeaderNames.XLrnHeaderName -> declarantLrnValue,
       CONTENT_TYPE -> ContentTypes.JSON)
 
-  val fakeCancellationRequestWithoutBody = FakeRequest("POST", cancelUri).withHeaders(CustomsHeaderNames.XLrnHeaderName -> lrn)
+  val fakeCancellationRequestWithoutBody = FakeRequest("POST", cancelUri)
   val fakeCancellationRequest = fakeCancellationRequestWithoutBody.withBody(Json.toJson(randomCancellation))
 
   override def beforeEach() {
@@ -218,7 +218,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
   "POST /cancel" should {
     "return 202 Accepted with X-Conversation-ID header when cancellation is persisted and xml request is processed" in {
       withAuthorizedUser()
-      when(mockImportService.cancelDeclaration(any[String], any[String], any[Cancellation])(any[HeaderCarrier]))
+      when(mockImportService.cancelDeclaration(any[String], any[Cancellation])(any[HeaderCarrier]))
         .thenReturn(Future.successful(Right(conversationId)))
 
       val result = await(route(app, fakeCancellationRequest).get)
@@ -226,12 +226,12 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       status(result) shouldBe ACCEPTED
       result.header.headers.get("X-Conversation-ID") shouldBe Some(conversationId)
 
-      verify(mockImportService, times(1)).cancelDeclaration(meq(declarantEoriValue), meq(lrn), any[Cancellation])(any[HeaderCarrier])
+      verify(mockImportService, times(1)).cancelDeclaration(meq(declarantEoriValue), any[Cancellation])(any[HeaderCarrier])
     }
 
     "return 400 Bad Request when submission for requested MRN doesn't exist" in {
       withAuthorizedUser()
-      when(mockImportService.cancelDeclaration(any[String], any[String], any[Cancellation])(any[HeaderCarrier]))
+      when(mockImportService.cancelDeclaration(any[String], any[Cancellation])(any[HeaderCarrier]))
         .thenReturn(Future.successful(Left(ErrorResponse.ErrorGenericBadRequest)))
 
       val result = await(route(app, fakeCancellationRequest).get)
@@ -239,7 +239,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       status(result) shouldBe BAD_REQUEST
       result.header.headers.get("X-Conversation-ID") shouldBe None
 
-      verify(mockImportService, times(1)).cancelDeclaration(meq(declarantEoriValue), meq(lrn), any[Cancellation])(any[HeaderCarrier])
+      verify(mockImportService, times(1)).cancelDeclaration(meq(declarantEoriValue), any[Cancellation])(any[HeaderCarrier])
     }
 
     "return 401 when authorisation fails, no enrolments" in {
@@ -272,7 +272,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
     "return 500 when confirm submission is NOT persisted and xml request is processed" in {
       withAuthorizedUser()
-      when(mockImportService.cancelDeclaration(any[String], any[String], any[Cancellation])(any[HeaderCarrier]))
+      when(mockImportService.cancelDeclaration(any[String], any[Cancellation])(any[HeaderCarrier]))
         .thenReturn(Future.successful(Left(ErrorResponse.ErrorInternalServerError)))
 
       val result = await(route(app, fakeCancellationRequest).get)
@@ -281,7 +281,7 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
 
     "return 500 when something goes wrong" in {
       withAuthorizedUser()
-      when(mockImportService.cancelDeclaration(any[String], any[String], any[Cancellation])(any[HeaderCarrier]))
+      when(mockImportService.cancelDeclaration(any[String], any[Cancellation])(any[HeaderCarrier]))
         .thenReturn(Future.failed(new RuntimeException("Mongo say no go")))
 
       val result = await(route(app, fakeCancellationRequest).get)
@@ -303,13 +303,6 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
     "return 415 when no body is sent" in {
       val result = await(route(app, fakeCancellationRequestWithoutBody).get)
       status(result) shouldBe UNSUPPORTED_MEDIA_TYPE
-    }
-
-    "return 500 when headers not present" in {
-      withAuthorizedUser()
-
-      val result = await(route(app, FakeRequest("POST", cancelUri).withBody(Json.toJson(randomCancellation))).get)
-      status(result) shouldBe INTERNAL_SERVER_ERROR
     }
   }
 }

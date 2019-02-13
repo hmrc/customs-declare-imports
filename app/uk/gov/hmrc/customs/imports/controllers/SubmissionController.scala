@@ -54,8 +54,8 @@ class SubmissionController @Inject()(appConfig: AppConfig,
   }
 
   def cancelDeclaration: Action[JsValue] = authorisedAction(BodyParsers.parse.json) { implicit request =>
-    def sendCancellation(eori: String, lrn: String, cancellation: Cancellation) = {
-      importService.cancelDeclaration(eori, lrn, cancellation).map {
+    def sendCancellation(eori: String, cancellation: Cancellation) = {
+      importService.cancelDeclaration(eori, cancellation).map {
         case Right(conversationId) => Accepted.withHeaders("X-Conversation-ID" -> conversationId)
         case Left(error) => error.JsonResult
       } recover {
@@ -65,17 +65,9 @@ class SubmissionController @Inject()(appConfig: AppConfig,
       }
     }
 
-    implicit val headers: Map[String, String] = request.headers.toSimpleMap
-
-    headerValidator.validateAndExtractSubmissionHeaders match {
-      case Right(vhr) =>
-        request.body.validate[Cancellation].fold(
-          _ => Future.successful(ErrorResponse.ErrorInvalidPayload.JsonResult),
-          cancellation => sendCancellation(request.eori.value, vhr.localReferenceNumber.value, cancellation))
-      case Left(error) =>
-        Logger.error("Invalid Headers found")
-        Future.successful(error.XmlResult)
-    }
+    request.body.validate[Cancellation].fold(
+      _ => Future.successful(ErrorResponse.ErrorInvalidPayload.JsonResult),
+      cancellation => sendCancellation(request.eori.value, cancellation))
   }
 
   private def processRequest()(implicit request: AuthorizedImportSubmissionRequest[AnyContent],

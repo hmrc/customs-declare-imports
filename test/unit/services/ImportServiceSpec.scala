@@ -189,7 +189,6 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
     val expectedCancellationXml = trim(<MetaData xmlns="urn:wco:datamodel:WCO:DocumentMetaData-DMS:2">
         <wstxns1:Declaration xmlns:wstxns1="urn:wco:datamodel:WCO:DEC-DMS:2">
           <wstxns1:FunctionCode>13</wstxns1:FunctionCode>
-          <wstxns1:FunctionalReferenceID>{lrn}</wstxns1:FunctionalReferenceID>
           <wstxns1:ID>{mrn}</wstxns1:ID>
           <wstxns1:TypeCode>INV</wstxns1:TypeCode>
           <wstxns1:AdditionalInformation>
@@ -204,7 +203,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
     "return an error when the MRN does not relate to the requesting EORI" in new SetUp {
       when(mockSubmissionRepo.getByEoriAndMrn(eori, mrn)).thenReturn(Future.successful(None))
 
-      val result = await(testObj.cancelDeclaration(eori, lrn, cancellation))
+      val result = await(testObj.cancelDeclaration(eori, cancellation))
 
       result shouldBe Left(ErrorResponse.ErrorGenericBadRequest)
 
@@ -217,7 +216,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       when(mockCustomsDeclarationsConnector.submitImportDeclaration(any(), any())(any(), any()))
         .thenReturn(Future.failed(new RuntimeException("Internal Server Error")))
 
-      val result = await(testObj.cancelDeclaration(eori, lrn, cancellation))
+      val result = await(testObj.cancelDeclaration(eori, cancellation))
 
       result shouldBe Left(ErrorResponse.ErrorInternalServerError)
 
@@ -232,7 +231,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       when(mockSubmissionActionRepo.insert(any())(any())).thenReturn(mockWriteResult)
       when(mockWriteResult.ok).thenReturn(false)
 
-      val result = await(testObj.cancelDeclaration(eori, lrn, cancellation))
+      val result = await(testObj.cancelDeclaration(eori, cancellation))
 
       result shouldBe Left(ErrorResponse.ErrorInternalServerError)
 
@@ -248,7 +247,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
       when(mockSubmissionActionRepo.insert(any())(any())).thenReturn(mockWriteResult)
       when(mockWriteResult.ok).thenReturn(true)
 
-      val result = await(testObj.cancelDeclaration(eori, lrn, cancellation))
+      val result = await(testObj.cancelDeclaration(eori, cancellation))
 
       result shouldBe Right(conversationId)
 
