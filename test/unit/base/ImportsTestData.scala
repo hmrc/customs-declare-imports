@@ -24,6 +24,7 @@ import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE}
 import play.api.mvc.Codec
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.imports.models._
+import uk.gov.hmrc.customs.imports.models.ChangeReasonCode
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.wco.dec.{Declaration => WcoDeclaration, MetaData, Response}
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames._
@@ -103,7 +104,7 @@ trait ImportsTestData {
 
   def randomConversationId: String = UUID.randomUUID().toString
 
-  def randomCancellation = Cancellation(mrn = randomString(35), reasonCode = 1, description = randomString(50))
+  def randomCancellation = Cancellation(mrn = randomString(35), changeReasonCode = ChangeReasonCode.DUPLICATE, description = randomString(50))
 
   protected def randomString(length: Int): String = Random.alphanumeric.take(length).mkString
 
