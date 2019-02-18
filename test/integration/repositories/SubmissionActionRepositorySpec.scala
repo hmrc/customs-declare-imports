@@ -64,6 +64,35 @@ class SubmissionActionRepositorySpec extends CustomsImportsBaseSpec with BeforeA
       foundAction.dateTimeSent should (be >= before).and(be <= System.currentTimeMillis())
     }
 
+    "find by submissionId should return the relevant submissionAction" in{
+      val actionToPersist = submissionAction
+      await(repo.insert(actionToPersist)).ok shouldBe true
+
+      val  foundActions : Seq[SubmissionAction] = await(repo.getBySubmissionId(actionToPersist.submissionId))
+
+      foundActions.size shouldBe 1
+      foundActions.head.submissionId shouldBe actionToPersist.submissionId
+      foundActions.head.conversationId shouldBe conversationId
+      foundActions.head.dateTimeSent should (be >= before).and(be <= System.currentTimeMillis())
+    }
+
+    "remove by submissionId should remove the relevant submissionAction" in{
+      val actionToPersist = submissionAction
+      await(repo.insert(actionToPersist)).ok shouldBe true
+
+      val  foundAction : SubmissionAction = await(repo.findByConversationId(conversationId)).get
+
+      foundAction.submissionId shouldBe actionToPersist.submissionId
+      foundAction.conversationId shouldBe conversationId
+      foundAction.dateTimeSent should (be >= before).and(be <= System.currentTimeMillis())
+
+      await(repo.deleteBySubmissionId(actionToPersist.submissionId))
+
+      val  foundAfterDeleteAction : Option[SubmissionAction] = await(repo.findByConversationId(conversationId))
+
+      foundAfterDeleteAction shouldBe None
+    }
+
     "find by conversationId should return None when there is no match" in{
       val actionToPersist = submissionAction
       await(repo.insert(actionToPersist)).ok shouldBe true

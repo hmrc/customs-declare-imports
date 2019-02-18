@@ -22,7 +22,7 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.{FailoverStrategy, ReadPreference}
 import reactivemongo.api.commands.Command
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.BSONObjectID
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.JSONSerializationPack
 import uk.gov.hmrc.customs.imports.models.{Declaration, Submission}
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -39,6 +39,14 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
     Submission.formats,
     objectIdFormats
   ) {
+
+
+  def deleteById(id: BSONObjectID) : Future[Boolean] = {
+    removeById(id).map(_.ok)
+  }
+
+  def getByEoriAndLrn(eori: String, localReferenceNumber: String):  Future[Option[Submission]] =
+  find("eori" -> JsString(eori), "localReferenceNumber" -> JsString(localReferenceNumber)).map(_.headOption)
 
   override def indexes: Seq[Index] = Seq(
     Index(Seq("eori" -> IndexType.Ascending), name = Some("eoriIdx")),

@@ -57,7 +57,10 @@ class SubmissionController @Inject()(appConfig: AppConfig,
     def sendCancellation(eori: String, cancellation: Cancellation) = {
       importService.cancelDeclaration(eori, cancellation).map {
         case Right(conversationId) => Accepted.withHeaders("X-Conversation-ID" -> conversationId)
-        case Left(error) => error.JsonResult
+        case Left(error) => {
+          Logger.error(s"error creating payload to dec api ${error.message}")
+          error.JsonResult
+        }
       } recover {
         case e: Exception =>
           Logger.error(s"problem calling declaration api ${e.getMessage}")
@@ -66,7 +69,8 @@ class SubmissionController @Inject()(appConfig: AppConfig,
     }
 
     request.body.validate[Cancellation].fold(
-      _ => Future.successful(ErrorResponse.ErrorInvalidPayload.JsonResult),
+      _ => { Logger.error("problem validating json payload")
+                 Future.successful(ErrorResponse.ErrorInvalidPayload.JsonResult) },
       cancellation => sendCancellation(request.eori.value, cancellation))
   }
 

@@ -10,4 +10,6 @@
 # Failing to follow this rule may result in test routes deployed in production.
 
 # Add all the application routes to the prod.routes file
-->         /                          prod.Routes
+->            /                          prod.Routes
+
+DELETE        /customs-declare-imports/test-only/user/:eori/submissions/:lrn                             uk.gov.hmrc.customs.imports.controllers.TestingUtilitiesController.deleteSubmissionByEoriAndLrn(eori, lrn)

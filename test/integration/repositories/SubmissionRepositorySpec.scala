@@ -117,7 +117,7 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
 
       await(actionRepo.insert(action1))
       await(actionRepo.insert(action2))
-      await(actionRepo.insert(submissionAction))
+      await(actionRepo.insert(submissionActionDifferentSubmissionId))
 
       await(submissionNotificationRepository.insert(notification1))
       await(submissionNotificationRepository.insert(notification2))
@@ -138,6 +138,20 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
       foundSubmission.actions.last.notifications shouldBe Seq.empty
     }
 
+    "delete by id returns true when submission exists" in {
+
+      repo.insert(submission).futureValue.ok shouldBe true
+
+      val result = repo.findByEori(eori).futureValue
+      result.size shouldBe 1
+
+      val deleteResult = repo.deleteById(submission.id).futureValue
+      deleteResult shouldBe true
+
+      val result2 = repo.findByEori(eori).futureValue
+      result2.size shouldBe 0
+    }
+
     "getByEoriAndMrn returns the correct persisted submission " in {
 
       repo.insert(submission).futureValue.ok shouldBe true
@@ -146,6 +160,16 @@ class SubmissionRepositorySpec extends UnitSpec with BeforeAndAfterEach
       val submission2 = await(repo.getByEoriAndMrn(eori, mrn)).get
       submission2.eori shouldBe eori
       submission2.mrn shouldBe Some(mrn)
+    }
+
+    "getByEoriAndLrn returns the correct persisted submission " in {
+
+      repo.insert(submission).futureValue.ok shouldBe true
+
+      // or we can retrieve it by eori and MRN
+      val submission2 = await(repo.getByEoriAndLrn(eori, lrn)).get
+      submission2.eori shouldBe eori
+      submission2.localReferenceNumber shouldBe lrn
     }
 
     "updateSubmission updates the submission when called" in {

@@ -17,18 +17,16 @@
 package unit.services
 
 import org.joda.time.DateTime
-import org.mockito.{ArgumentCaptor, ArgumentMatcher}
 import org.mockito.ArgumentMatchers.{eq => meq, _}
 import org.mockito.Mockito._
+import org.mockito.{ArgumentCaptor, ArgumentMatcher}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import reactivemongo.api.ReadPreference
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.customs.imports.connectors.{CustomsDeclarationsConnector, CustomsDeclarationsResponse}
 import uk.gov.hmrc.customs.imports.controllers.ErrorResponse
-import uk.gov.hmrc.customs.imports.models.SubmissionActionType.SubmissionActionType
 import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.customs.imports.repositories.{SubmissionActionRepository, SubmissionNotificationRepository, SubmissionRepository}
 import uk.gov.hmrc.customs.imports.services.ImportService
