@@ -182,7 +182,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
   "cancelDeclaration" should {
     val description = "a description"
     val changeReasonCode = 1
-    val cancellation = Cancellation(mrn, changeReasonCode, description)
+    val cancellation = Cancellation(mrn, ChangeReasonCode(changeReasonCode), description)
     val mockWriteResult: WriteResult = mock[WriteResult]
     val expectedCancellationXml = trim(<MetaData xmlns="urn:wco:datamodel:WCO:DocumentMetaData-DMS:2">
         <wstxns1:Declaration xmlns:wstxns1="urn:wco:datamodel:WCO:DEC-DMS:2">

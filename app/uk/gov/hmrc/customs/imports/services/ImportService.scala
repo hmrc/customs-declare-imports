@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.imports.services
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.customs.imports.connectors.{CustomsDeclarationsConnector, CustomsDeclarationsResponse}
+import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
 import uk.gov.hmrc.customs.imports.controllers.ErrorResponse
 import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.customs.imports.repositories.{SubmissionActionRepository, SubmissionNotificationRepository, SubmissionRepository}
@@ -77,7 +77,7 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
         additionalInformations = Seq(AdditionalInformation(
           statementDescription = Some(cancellation.description))),
         amendments = Seq(Amendment(
-          changeReasonCode = Some(cancellation.reasonCode.toString)
+          changeReasonCode = Some(cancellation.changeReasonCode.id.toString)
         ))))).toXml
 
     case object InvalidMrn extends RuntimeException

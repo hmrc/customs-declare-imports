@@ -16,9 +16,17 @@
 
 package uk.gov.hmrc.customs.imports.models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Format, Json, Reads, Writes}
+import uk.gov.hmrc.customs.imports.models.ChangeReasonCode.ChangeReasonCode
 
-case class Cancellation(mrn: String, reasonCode: Int, description: String)
+object ChangeReasonCode extends Enumeration(1) {
+  type ChangeReasonCode = Value
+  val NO_LONGER_REQUIRED, DUPLICATE, OTHER = Value
+
+  implicit val format = Format(Reads.enumNameReads(ChangeReasonCode), Writes.enumNameWrites)
+}
+
+case class Cancellation(mrn: String, changeReasonCode: ChangeReasonCode, description: String)
 
 object Cancellation {
   implicit val format = Json.format[Cancellation]
