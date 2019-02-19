@@ -76,6 +76,17 @@ class SubmissionActionRepositorySpec extends CustomsImportsBaseSpec with BeforeA
       foundActions.head.dateTimeSent should (be >= before).and(be <= System.currentTimeMillis())
     }
 
+    "find by submissionId should return 2 actions when 2 are persisted" in{
+      val actionToPersist = submissionAction
+      await(repo.insert(actionToPersist)).ok shouldBe true
+      await(repo.insert(cancelationAction)).ok shouldBe true
+
+      val  foundActions : Seq[SubmissionAction] = await(repo.getBySubmissionId(actionToPersist.submissionId))
+
+      foundActions.size shouldBe 2
+
+    }
+
     "remove by submissionId should remove the relevant submissionAction" in{
       val actionToPersist = submissionAction
       await(repo.insert(actionToPersist)).ok shouldBe true

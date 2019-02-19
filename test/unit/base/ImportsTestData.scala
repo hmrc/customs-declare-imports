@@ -49,6 +49,7 @@ trait ImportsTestData {
   val submissionNoMrn = Submission(eori, lrn, None)
   val conversationId = "58494f63-5749-4a62-8193-0452fdc7263b"
   val submissionAction = SubmissionAction(submission.id, conversationId, SubmissionActionType.SUBMISSION)
+  val cancelationAction = SubmissionAction(submission.id, UUID.randomUUID().toString, SubmissionActionType.CANCELLATION)
   val submissionActionDifferentSubmissionId = SubmissionAction(BSONObjectID.generate(), conversationId, SubmissionActionType.SUBMISSION)
 
   val seqSubmissions: Seq[Submission] = Seq(submission)

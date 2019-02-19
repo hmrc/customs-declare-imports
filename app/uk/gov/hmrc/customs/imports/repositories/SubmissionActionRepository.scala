@@ -17,13 +17,12 @@
 package uk.gov.hmrc.customs.imports.repositories
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.{JsPath, JsString, Json, Reads}
+import play.api.libs.json.{JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONDocumentWriter, BSONObjectID, BSONString}
+import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.customs.imports.models.SubmissionAction
-import uk.gov.hmrc.customs.imports.models.SubmissionActionType.SubmissionActionType
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
 
@@ -39,12 +38,11 @@ class SubmissionActionRepository @Inject()(implicit mc: ReactiveMongoComponent, 
   ) {
 
   def deleteBySubmissionId(submissionId: BSONObjectID): Future[Boolean] = {
-    collection.delete().one(Json.obj("submissionId" -> Json.toJson(submissionId))).map(_.ok)
+    remove("submissionId" -> Json.toJson(submissionId)).map(_.ok)
   }
 
   def getBySubmissionId(submissionId: BSONObjectID): Future[Seq[SubmissionAction]] = {
-    collection.find(Json.obj("submissionId" -> Json.toJson(submissionId))).one[SubmissionAction]
-      .map(maybeSubmissions => maybeSubmissions.toList)
+    find("submissionId" -> Json.toJson(submissionId))
   }
 
 

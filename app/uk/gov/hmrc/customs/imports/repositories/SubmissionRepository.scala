@@ -40,18 +40,17 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
     objectIdFormats
   ) {
 
+  override def indexes: Seq[Index] = Seq(
+  Index(Seq("eori" -> IndexType.Ascending), name = Some("eoriIdx")),
+  Index(Seq("localReferenceNumber" -> IndexType.Ascending), name = Some("lrnIdx"))
+  )
 
   def deleteById(id: BSONObjectID) : Future[Boolean] = {
     removeById(id).map(_.ok)
   }
 
   def getByEoriAndLrn(eori: String, localReferenceNumber: String):  Future[Option[Submission]] =
-  find("eori" -> JsString(eori), "localReferenceNumber" -> JsString(localReferenceNumber)).map(_.headOption)
-
-  override def indexes: Seq[Index] = Seq(
-    Index(Seq("eori" -> IndexType.Ascending), name = Some("eoriIdx")),
-    Index(Seq("localReferenceNumber" -> IndexType.Ascending), name = Some("lrnIdx"))
-  )
+    find("eori" -> JsString(eori), "localReferenceNumber" -> JsString(localReferenceNumber)).map(_.headOption)
 
   def findByEori(eori: String): Future[Seq[Declaration]] = {
     val commandDoc = Json.obj(
