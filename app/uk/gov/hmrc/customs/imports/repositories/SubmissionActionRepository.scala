@@ -17,13 +17,14 @@
 package uk.gov.hmrc.customs.imports.repositories
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.JsString
+import play.api.libs.json.{JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.customs.imports.models.{Submission, SubmissionAction}
+import reactivemongo.play.json.ImplicitBSONHandlers._
+import uk.gov.hmrc.customs.imports.models.SubmissionAction
+import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
-import uk.gov.hmrc.mongo.{AtomicUpdate, ReactiveRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,6 +36,14 @@ class SubmissionActionRepository @Inject()(implicit mc: ReactiveMongoComponent, 
     SubmissionAction.formats,
     objectIdFormats
   ) {
+
+  def deleteBySubmissionId(submissionId: BSONObjectID): Future[Boolean] = {
+    remove("submissionId" -> Json.toJson(submissionId)).map(_.ok)
+  }
+
+  def getBySubmissionId(submissionId: BSONObjectID): Future[Seq[SubmissionAction]] = {
+    find("submissionId" -> Json.toJson(submissionId))
+  }
 
 
   override def indexes: Seq[Index] = Seq(

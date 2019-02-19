@@ -99,7 +99,10 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
       conversationId <- requestCancellation
       persist <- createSubmissionAction(submissionId, conversationId)
     } yield persist).recover {
-      case InvalidMrn => Left(ErrorResponse.ErrorGenericBadRequest)
+      case InvalidMrn => {
+        Logger.error("invalid Mrn received")
+        Left(ErrorResponse.ErrorGenericBadRequest)
+      }
       case e =>
         Logger.error(s"Error cancelling submission: ${e.getMessage}}")
         Left(ErrorResponse.ErrorInternalServerError)

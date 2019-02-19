@@ -35,7 +35,7 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.customs.imports.config.AppConfig
 import uk.gov.hmrc.customs.imports.connectors.CustomsDeclarationsConnector
 import uk.gov.hmrc.customs.imports.repositories.{SubmissionNotificationRepository, SubmissionRepository}
-import uk.gov.hmrc.customs.imports.services.ImportService
+import uk.gov.hmrc.customs.imports.services.{ImportService, TestOnlyImportService}
 import uk.gov.hmrc.http.SessionKeys
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -51,6 +51,7 @@ trait CustomsImportsBaseSpec
   val mockActorSystem: ActorSystem = mock[ActorSystem]
   val mockDeclarationsApiConnector: CustomsDeclarationsConnector = mock[CustomsDeclarationsConnector]
   val mockImportService: ImportService = mock[ImportService]
+  val mockTestOnlyImportsService: TestOnlyImportService = mock[TestOnlyImportService]
   val mockAppConfig: AppConfig = mock[AppConfig]
 
   def injector: Injector = app.injector
@@ -67,6 +68,7 @@ trait CustomsImportsBaseSpec
         bind[SubmissionNotificationRepository].to(mockSubmissionNotificationRepository),
         bind[CustomsDeclarationsConnector].to(mockDeclarationsApiConnector),
         bind[ImportService].to(mockImportService),
+        bind[TestOnlyImportService].to(mockTestOnlyImportsService),
         bind[AppConfig].to(mockAppConfig)
       )
       .build()

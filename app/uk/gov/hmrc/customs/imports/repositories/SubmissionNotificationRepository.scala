@@ -17,6 +17,8 @@
 package uk.gov.hmrc.customs.imports.repositories
 
 import javax.inject.{Inject, Singleton}
+import play.api.Logger
+import play.api.libs.json.JsString
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
@@ -24,7 +26,7 @@ import uk.gov.hmrc.customs.imports.models.SubmissionNotification
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SubmissionNotificationRepository @Inject()(mc: ReactiveMongoComponent)(implicit ec: ExecutionContext)
@@ -34,6 +36,12 @@ class SubmissionNotificationRepository @Inject()(mc: ReactiveMongoComponent)(imp
       SubmissionNotification.formats,
       objectIdFormats
     ) {
+
+
+  def deleteByConversationId(conversationId: String): Future[Boolean] = {
+    Logger.debug(s"attempting to delete by conversationId: $conversationId")
+    remove("conversationId" -> JsString(conversationId)).map(_.ok)
+  }
 
   override def indexes: Seq[Index] = Seq(
     Index(Seq("functionCode" -> IndexType.Ascending), name = Some("functionCodeIdx")),

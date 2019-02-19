@@ -67,5 +67,18 @@ class SubmissionNotificationRepositorySpec extends UnitSpec with GuiceOneAppPerS
       foundAction.head.functionCode shouldBe functionCodeACK
       foundAction.head.dateTimeIssued should (be >= before).and(be <= System.currentTimeMillis())
     }
+
+    "delete by Conversation ID should delete all notifications" in {
+      repo.insert(submissionNotification).futureValue.ok shouldBe true
+
+      val foundAction: Seq[SubmissionNotification] = await(repo.find("conversationId" -> JsString(conversationId)))
+
+      foundAction.size shouldBe 1
+
+      await(repo.deleteByConversationId(conversationId))
+      val afterDeleteFind: Seq[SubmissionNotification] = await(repo.find("conversationId" -> JsString(conversationId)))
+
+      afterDeleteFind.size shouldBe 0
+    }
   }
 }
