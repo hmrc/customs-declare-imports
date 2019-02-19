@@ -205,26 +205,26 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
 
       result shouldBe Left(ErrorResponse.ErrorGenericBadRequest)
 
-      verify(mockCustomsDeclarationsConnector, never()).submitImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockCustomsDeclarationsConnector, never()).cancelImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext])
       verify(mockSubmissionActionRepo, never()).insert(any[SubmissionAction])(any[ExecutionContext])
     }
 
     "return an error when the MRN is for an existing submission for the request EORI but the cancellation request fails" in new SetUp {
       when(mockSubmissionRepo.getByEoriAndMrn(eori, mrn)).thenReturn(Future.successful(Some(submission)))
-      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any(), any())(any(), any()))
+      when(mockCustomsDeclarationsConnector.cancelImportDeclaration(any(), any())(any(), any()))
         .thenReturn(Future.failed(new RuntimeException("Internal Server Error")))
 
       val result = await(testObj.cancelDeclaration(eori, cancellation))
 
       result shouldBe Left(ErrorResponse.ErrorInternalServerError)
 
-      verify(mockCustomsDeclarationsConnector).submitImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockCustomsDeclarationsConnector).cancelImportDeclaration(any[String], any[String])(any[HeaderCarrier], any[ExecutionContext])
       verify(mockSubmissionActionRepo, never()).insert(any[SubmissionAction])(any[ExecutionContext])
     }
 
     "return an error when the MRN is for an existing submission for the request EORI but the persistence fails" in new SetUp {
       when(mockSubmissionRepo.getByEoriAndMrn(eori, mrn)).thenReturn(Future.successful(Some(submission)))
-      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any(), any())(any(), any()))
+      when(mockCustomsDeclarationsConnector.cancelImportDeclaration(any(), any())(any(), any()))
         .thenReturn(Future.successful(CustomsDeclarationsResponse(conversationId)))
       when(mockSubmissionActionRepo.insert(any())(any())).thenReturn(mockWriteResult)
       when(mockWriteResult.ok).thenReturn(false)
@@ -233,14 +233,14 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
 
       result shouldBe Left(ErrorResponse.ErrorInternalServerError)
 
-      verify(mockCustomsDeclarationsConnector).submitImportDeclaration(meq(eori), meq(expectedCancellationXml.toString))(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockCustomsDeclarationsConnector).cancelImportDeclaration(meq(eori), meq(expectedCancellationXml.toString))(any[HeaderCarrier], any[ExecutionContext])
       verify(mockSubmissionActionRepo).insert(any[SubmissionAction])(any[ExecutionContext])
     }
 
     "persist the submissionAction and return the conversationId when MRN exists and the cancellation request is successful" in new SetUp {
       val expectedSubmissionAction = SubmissionAction(submission.id, conversationId, SubmissionActionType.CANCELLATION)
       when(mockSubmissionRepo.getByEoriAndMrn(eori, mrn)).thenReturn(Future.successful(Some(submission)))
-      when(mockCustomsDeclarationsConnector.submitImportDeclaration(any(), any())(any(), any()))
+      when(mockCustomsDeclarationsConnector.cancelImportDeclaration(any(), any())(any(), any()))
         .thenReturn(Future.successful(CustomsDeclarationsResponse(conversationId)))
       when(mockSubmissionActionRepo.insert(any())(any())).thenReturn(mockWriteResult)
       when(mockWriteResult.ok).thenReturn(true)
@@ -249,7 +249,7 @@ class ImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFutures wit
 
       result shouldBe Right(conversationId)
 
-      verify(mockCustomsDeclarationsConnector).submitImportDeclaration(meq(eori), meq(expectedCancellationXml.toString))(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockCustomsDeclarationsConnector).cancelImportDeclaration(meq(eori), meq(expectedCancellationXml.toString))(any[HeaderCarrier], any[ExecutionContext])
       verify(mockSubmissionActionRepo).insert(argThat(IsExpectedSubmissionAction(expectedSubmissionAction)))(any[ExecutionContext])
     }
 

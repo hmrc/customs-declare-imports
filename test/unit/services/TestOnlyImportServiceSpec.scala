@@ -58,6 +58,17 @@ class TestOnlyImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFut
       verify(mockSubmissionActionRepo, times(1)).deleteBySubmissionId(submission.id)
       verify(mockSubmissionNotificationRepo, times(1)).deleteByConversationId(submissionAction.conversationId)
     }
+
+    "return true when no submissions are found" in new SetUp() {
+
+      when(mockSubmissionRepo.getByEoriAndLrn(declarantEoriValue, declarantLrnValue)).thenReturn(Future.successful(None))
+      val result = await(testObj.deleteByEoriAndLrn(declarantEoriValue, declarantLrnValue))
+
+      result shouldBe true
+
+      verify(mockSubmissionRepo, times(1)).getByEoriAndLrn(declarantEoriValue, declarantLrnValue)
+
+    }
   }
 
 }

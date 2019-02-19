@@ -38,6 +38,10 @@ class CustomsDeclarationsConnector @Inject()(appConfig: AppConfig,
                                       (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =
     postMetaData(appConfig.submitImportDeclarationUri, xmlPayload, eori)
 
+  def cancelImportDeclaration(eori: String, xmlPayload: String)
+                             (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =
+    postMetaData(appConfig.cancelImportDeclarationUri, xmlPayload, eori)
+
   private def postMetaData(uri: String,
                            xmlPayload: String,
                            eori: String,
