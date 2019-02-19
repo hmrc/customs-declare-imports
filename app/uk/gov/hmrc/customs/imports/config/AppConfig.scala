@@ -35,6 +35,8 @@ class AppConfig @Inject()(override val runModeConfiguration: Configuration, val 
 
   lazy val submitImportDeclarationUri: String = getString("microservice.services.customs-declarations.submit-uri")
 
+  lazy val cancelImportDeclarationUri: String = getString("microservice.services.customs-declarations.cancel-uri")
+
   lazy val notificationBearerToken: String = getString("microservice.services.customs-declarations.bearer-token")
 
   lazy val developerHubClientId: String = getConfString("customs-declarations.client-id", appName)

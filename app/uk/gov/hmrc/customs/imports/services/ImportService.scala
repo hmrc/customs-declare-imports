@@ -87,7 +87,7 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
       case _ => throw InvalidMrn
     }
 
-    def requestCancellation: Future[String] = customsDeclarationsConnector.submitImportDeclaration(eori, xml).map(_.conversationId)
+    def requestCancellation: Future[String] = customsDeclarationsConnector.cancelImportDeclaration(eori, xml).map(_.conversationId)
 
     def createSubmissionAction(submissionId: BSONObjectID, conversationId: String): Future[Either[ErrorResponse, String]] =
       submissionActionRepository.insert(SubmissionAction(submissionId, conversationId, SubmissionActionType.CANCELLATION)).map { result =>
