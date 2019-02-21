@@ -38,31 +38,75 @@ class TestOnlyImportServiceSpec extends MockitoSugar with UnitSpec with ScalaFut
     val testObj = new TestOnlyImportService(mockSubmissionRepo,
       mockSubmissionActionRepo,
       mockSubmissionNotificationRepo)
+
+    def testDelete(deleteActionResult : Boolean, deleteNotificationResult: Boolean, expectedResult: Boolean): Unit ={
+      when(mockSubmissionRepo.getByEoriAndLrn(declarantEoriValue, declarantLrnValue)).thenReturn(Future.successful(Some(submission)))
+      when(mockSubmissionActionRepo.findBySubmissionId(submission.id)).thenReturn(Future.successful(Seq(submissionAction)))
+      when(mockSubmissionActionRepo.deleteBySubmissionId(any())).thenReturn(Future.successful(deleteActionResult))
+      when(mockSubmissionNotificationRepo.deleteByConversationId(any())).thenReturn(Future.successful(deleteNotificationResult))
+      when(mockSubmissionRepo.deleteById(any())).thenReturn(Future.successful(true))
+
+      val result: Boolean = await(testObj.deleteByEoriAndLrn(declarantEoriValue, declarantLrnValue))
+
+      result shouldBe expectedResult
+
+      verify(mockSubmissionRepo, times(1)).getByEoriAndLrn(declarantEoriValue, declarantLrnValue)
+      verify(mockSubmissionRepo, times(1)).deleteById(submission.id)
+      verify(mockSubmissionActionRepo, times(1)).findBySubmissionId(submission.id)
+      verify(mockSubmissionActionRepo, times(1)).deleteBySubmissionId(submission.id)
+      verify(mockSubmissionNotificationRepo, times(1)).deleteByConversationId(submissionAction.conversationId)
+    }
   }
 
 
   "TestOnlyImportService" should {
-    "call submission, submissionAction and submissionNotification repository delete actions " in new SetUp() {
 
-      when(mockSubmissionRepo.getByEoriAndLrn(declarantEoriValue, declarantLrnValue)).thenReturn(Future.successful(Some(submission)))
-      when(mockSubmissionActionRepo.getBySubmissionId(submission.id)).thenReturn(Future.successful(Seq(submissionAction)))
-      when(mockSubmissionRepo.deleteById(any())).thenReturn(Future.successful(true))
+    "deleteByEoriAndLrn" should {
+      "call submission, submissionAction and submissionNotification repository delete actions " in new SetUp() {
+        testDelete(deleteActionResult = true, deleteNotificationResult = true, expectedResult = true)
+      }
 
-      val result = await(testObj.deleteByEoriAndLrn(declarantEoriValue, declarantLrnValue))
+      "call submission, submissionAction and return false when submissionAction delete fails " in new SetUp() {
+        testDelete(deleteActionResult = false, deleteNotificationResult = true, expectedResult = false)
+      }
 
-      result shouldBe true
+      "call submission, submissionAction , submissionNotification and return false when submissionNotification delete fails " in new SetUp() {
+        testDelete(deleteActionResult = true, deleteNotificationResult = false, expectedResult = false)
+      }
+    }
 
-      verify(mockSubmissionRepo, times(1)).getByEoriAndLrn(declarantEoriValue, declarantLrnValue)
-      verify(mockSubmissionRepo, times(1)).deleteById(submission.id)
-      verify(mockSubmissionActionRepo, times(1)).getBySubmissionId(submission.id)
-      verify(mockSubmissionActionRepo, times(1)).deleteBySubmissionId(submission.id)
-      verify(mockSubmissionNotificationRepo, times(1)).deleteByConversationId(submissionAction.conversationId)
+    "deleteCancellationActionsByConversationId" should {
+
+      "return true when submissionAction and submission notification deletions are successful" in new SetUp {
+        when(mockSubmissionActionRepo.deleteCancellationActionsByConversationId(any())).thenReturn(Future.successful(true))
+        when(mockSubmissionNotificationRepo.deleteByConversationId(any())).thenReturn(Future.successful(true))
+        val result: Boolean = await(testObj.deleteCancellationActionsByConversationId(conversationId))
+
+        result shouldBe true
+      }
+
+      "return false when submissionAction deletion fails" in new SetUp {
+        when(mockSubmissionActionRepo.deleteCancellationActionsByConversationId(any())).thenReturn(Future.successful(false))
+        when(mockSubmissionNotificationRepo.deleteByConversationId(any())).thenReturn(Future.successful(true))
+        val result: Boolean = await(testObj.deleteCancellationActionsByConversationId(conversationId))
+
+        result shouldBe false
+      }
+
+      "return false when submission notification deletion fails" in new SetUp {
+        when(mockSubmissionActionRepo.deleteCancellationActionsByConversationId(any())).thenReturn(Future.successful(true))
+        when(mockSubmissionNotificationRepo.deleteByConversationId(any())).thenReturn(Future.successful(false))
+        val result: Boolean = await(testObj.deleteCancellationActionsByConversationId(conversationId))
+
+        result shouldBe false
+      }
+
     }
 
     "return true when no submissions are found" in new SetUp() {
 
       when(mockSubmissionRepo.getByEoriAndLrn(declarantEoriValue, declarantLrnValue)).thenReturn(Future.successful(None))
-      val result = await(testObj.deleteByEoriAndLrn(declarantEoriValue, declarantLrnValue))
+      val result: Boolean = await(testObj.deleteByEoriAndLrn(declarantEoriValue, declarantLrnValue))
 
       result shouldBe true
 
