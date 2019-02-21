@@ -22,7 +22,7 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import uk.gov.hmrc.customs.imports.models.SubmissionAction
+import uk.gov.hmrc.customs.imports.models.{SubmissionAction, SubmissionActionType}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
 
@@ -37,22 +37,25 @@ class SubmissionActionRepository @Inject()(implicit mc: ReactiveMongoComponent, 
     objectIdFormats
   ) {
 
-  def deleteBySubmissionId(submissionId: BSONObjectID): Future[Boolean] = {
-    remove("submissionId" -> Json.toJson(submissionId)).map(_.ok)
-  }
-
-  def getBySubmissionId(submissionId: BSONObjectID): Future[Seq[SubmissionAction]] = {
-    find("submissionId" -> Json.toJson(submissionId))
-  }
-
-
   override def indexes: Seq[Index] = Seq(
   Index(Seq("conversationId" -> IndexType.Ascending), unique = true, name = Some("conversationIdx")),
   Index(Seq("submissionId" -> IndexType.Ascending), name = Some("submissionIdx"))
   )
 
+  def findBySubmissionId(submissionId: BSONObjectID): Future[Seq[SubmissionAction]] = {
+    find("submissionId" -> Json.toJson(submissionId))
+  }
+
   def findByConversationId(conversationId: String): Future[Option[SubmissionAction]] = {
     find("conversationId" -> JsString(conversationId)).map(_.headOption)
+  }
+
+  def deleteCancellationActionsByConversationId(conversationId: String): Future[Boolean] = {
+    remove("conversationId" -> JsString(conversationId), "actionType" -> JsString(SubmissionActionType.CANCELLATION.toString)).map(wr => wr.n>0)
+  }
+
+  def deleteBySubmissionId(submissionId: BSONObjectID): Future[Boolean] = {
+    remove("submissionId" -> Json.toJson(submissionId)).map(_.ok)
   }
 
 }

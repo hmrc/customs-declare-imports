@@ -17,7 +17,7 @@
 package uk.gov.hmrc.customs.imports.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.mvc.Action
+import play.api.mvc.{Action, AnyContent}
 import uk.gov.hmrc.customs.imports.config.AppConfig
 import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
 import uk.gov.hmrc.customs.imports.services.TestOnlyImportService
@@ -33,14 +33,21 @@ class TestingUtilitiesController @Inject()(appConfig: AppConfig,
 //TODO delete submission data by eori
 
 
-  def deleteSubmissionByEoriAndLrn(eori: String, lrn: String) = Action.async {
+  def deleteSubmissionByEoriAndLrn(eori: String, lrn: String): Action[AnyContent] = Action.async {
      implicit req => {
-      importService.deleteByEoriAndLrn(eori, lrn).map(result =>
-        result match {
-          case true => Ok
-          case false => InternalServerError
-        })
+      importService.deleteByEoriAndLrn(eori, lrn).map {
+        case true => Ok
+        case false => InternalServerError
+      }
     }
   }
 
+  def deleteCancelActionByConversationId(conversationId: String): Action[AnyContent] = Action.async {
+    implicit req => {
+      importService.deleteCancellationActionsByConversationId(conversationId).map {
+        case true => Ok
+        case false => InternalServerError
+      }
+    }
+  }
 }

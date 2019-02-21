@@ -17,7 +17,6 @@
 package uk.gov.hmrc.customs.imports.services
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
 import uk.gov.hmrc.customs.imports.models._
 import uk.gov.hmrc.customs.imports.repositories.{SubmissionActionRepository, SubmissionNotificationRepository, SubmissionRepository}
 
@@ -30,46 +29,43 @@ class TestOnlyImportService @Inject()(submissionRepository: SubmissionRepository
                                       submissionNotificationRepository: SubmissionNotificationRepository) {
 
   def deleteByEoriAndLrn(eori: String, lrn: String): Future[Boolean] = {
-
-
-    def deleteSubmission(mayBeSubmission: Option[Submission]): Future[Boolean] = {
-      mayBeSubmission.fold(Future.successful(true)){ submission =>
-        submissionRepository.deleteById(submission.id)
-      }
-    }
-
-    def deleteSubmissionActions(submissionActions: Seq[SubmissionAction]): Future[Unit] = {
-      Future.successful(
-        submissionActions.foreach(submissionAction => { submissionActionRepository.deleteBySubmissionId(submissionAction.submissionId)})
-      )
-    }
-
-    def deleteChildren(mayBeSubmission: Option[Submission]): Future[Boolean] = {
-      mayBeSubmission.fold(Future.successful(true)){ submission =>
-        submissionActionRepository.getBySubmissionId(submission.id).map(
-          submissionActions => {
-            submissionActions.foreach(sa => Logger.debug(s"we have submission Action: ${sa.conversationId} ${sa.actionType}"))
-            deleteSubmissionActions(submissionActions)
-            deleteSubmissionNotifications(submissionActions)
-            true
-          }
-        )
-      }
-
-    }
-
-    def deleteSubmissionNotifications(submissionActions: Seq[SubmissionAction]): Future[Unit] = {
-      Future.successful(
-        submissionActions.foreach({ submissionAction => submissionNotificationRepository.deleteByConversationId(submissionAction.conversationId)})
-      )
-    }
-
     for {
       submission        <- submissionRepository.getByEoriAndLrn(eori, lrn)
-      _                 <- deleteChildren(submission)
+      childResult       <- deleteSubmissionChildren(submission)
       result            <- deleteSubmission(submission)
-    } yield result
+    } yield result && childResult
+  }
 
+  def deleteCancellationActionsByConversationId(conversationId: String): Future[Boolean] ={
+   for {
+      actionDeleteResult        <- submissionActionRepository.deleteCancellationActionsByConversationId(conversationId)
+      notificationDeleteResult  <- submissionNotificationRepository.deleteByConversationId(conversationId)
+    } yield actionDeleteResult && notificationDeleteResult
+  }
+
+  private def deleteSubmission(mayBeSubmission: Option[Submission]): Future[Boolean] = {
+    mayBeSubmission.fold(Future.successful(true)){ submission => submissionRepository.deleteById(submission.id) }
+  }
+
+  private def deleteBySubmissionAction(submissionAction: SubmissionAction): Future[Boolean] = {
+    for {
+      deleteActionResult        <-  submissionActionRepository.deleteBySubmissionId(submissionAction.submissionId)
+      deleteNotificationResult  <-  submissionNotificationRepository.deleteByConversationId(submissionAction.conversationId)
+    } yield deleteActionResult && deleteNotificationResult
+  }
+
+  private def combineResults(submissionActions: Seq[SubmissionAction]): Future[Boolean] = {
+    Future.sequence(submissionActions.map(submissionAction => deleteBySubmissionAction(submissionAction)))
+      .map(results => results.forall(b => b))
+  }
+
+  private def deleteSubmissionChildren(mayBeSubmission: Option[Submission]): Future[Boolean] = {
+    mayBeSubmission.fold(Future.successful(true)){ submission =>
+      for {
+        submissionActions <- submissionActionRepository.findBySubmissionId(submission.id)
+        results           <- combineResults(submissionActions)
+      } yield results
+    }
   }
 
 }
