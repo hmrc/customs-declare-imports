@@ -17,7 +17,6 @@
 package uk.gov.hmrc.customs.imports.repositories
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
 import play.api.libs.json.JsString
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -39,7 +38,6 @@ class SubmissionNotificationRepository @Inject()(mc: ReactiveMongoComponent)(imp
 
 
   def deleteByConversationId(conversationId: String): Future[Boolean] = {
-    Logger.debug(s"attempting to delete by conversationId: $conversationId")
     remove("conversationId" -> JsString(conversationId)).map(_.ok)
   }
 
