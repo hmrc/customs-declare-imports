@@ -19,15 +19,14 @@ package uk.gov.hmrc.customs.imports.repositories
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.{FailoverStrategy, ReadPreference}
-import reactivemongo.api.commands.Command
+import reactivemongo.api.commands.Command.CommandWithPackRunner
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.JSONSerializationPack
+import reactivemongo.api.{FailoverStrategy, ReadPreference}
+import reactivemongo.bson.BSONObjectID
+import reactivemongo.play.json.{JSONSerializationPack, _}
 import uk.gov.hmrc.customs.imports.models.{Declaration, Submission}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
-import reactivemongo.play.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -93,7 +92,7 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
               "$filter" -> Json.obj("input" -> "$actions", "as" -> "a", "cond" -> Json.obj("$ifNull" -> Json.arr("$$a._id", false))))))),
     "allowDiskUse" -> true)
 
-    val runner = Command.run(JSONSerializationPack, FailoverStrategy())
+    val runner = CommandWithPackRunner(JSONSerializationPack, FailoverStrategy())
     runner.apply(collection.db, runner.rawCommand(commandDoc)).one[JsObject](ReadPreference.Primary).flatMap { json =>
       (json \ "result").validate[Seq[Declaration]] match {
         case JsSuccess(result, _) => Future.successful(result)
