@@ -27,23 +27,13 @@ import scala.xml.NodeSeq
 
 
 trait HttpStatusCodeShortDescriptions {
-  // 2XX
-  val OkCode = "OK"
-  val CreatedCode = "CREATED"
-  val AcceptedCode = "ACCEPTED"
+
   // 4XX
   val BadRequestCode = "BAD_REQUEST"
   val UnauthorizedCode = "UNAUTHORIZED"
-  val NotFoundCode = "NOT_FOUND"
-  val ForbiddenCode = "FORBIDDEN"
-  val MethodNotAllowedCode = "METHOD_NOT_ALLOWED"
-  val NotAcceptableCode = "ACCEPT_HEADER_INVALID"
-  val UnsupportedMediaTypeCode = "UNSUPPORTED_MEDIA_TYPE"
+
   // 5XX
   val InternalServerErrorCode = "INTERNAL_SERVER_ERROR"
-  val NotImplemented = "NOT_IMPLEMENTED"
-  val BadGateway = "BAD_GATEWAY"
-  val ServiceUnavailable = "SERVICE_UNAVAILABLE"
 }
 
 case class ResponseContents(code: String, message: String)
@@ -86,12 +76,6 @@ object ErrorResponse extends HttpStatusCodeShortDescriptions {
   val ErrorGenericBadRequest: ErrorResponse = errorBadRequest("Bad Request")
 
   val ErrorInvalidPayload: ErrorResponse = errorBadRequest("Invalid payload")
-
-  val ErrorNotFound = ErrorResponse(NOT_FOUND, NotFoundCode, "Resource was not found")
-
-  val ErrorAcceptHeaderInvalid = ErrorResponse(NOT_ACCEPTABLE, NotAcceptableCode, "The accept header is missing or invalid")
-
-  val ErrorContentTypeHeaderInvalid = ErrorResponse(UNSUPPORTED_MEDIA_TYPE, UnsupportedMediaTypeCode, "The content type header is missing or invalid")
 
   def errorInternalServerError(errorMessage: String): ErrorResponse =
     ErrorResponse(INTERNAL_SERVER_ERROR, InternalServerErrorCode, errorMessage)

@@ -40,7 +40,6 @@ class ImportService @Inject()(submissionRepository: SubmissionRepository,
                              (implicit hc: HeaderCarrier): Future[Option[String]] =
     customsDeclarationsConnector.submitImportDeclaration(eori, xml.toString()).flatMap({ response =>
     val conversationId = response.conversationId
-    Logger.debug(s"conversationId: $conversationId")
     val submission = Submission(eori, localReferenceNumber, None)
     submissionRepository
       .insert(submission)

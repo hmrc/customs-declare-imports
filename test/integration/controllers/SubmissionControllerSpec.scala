@@ -110,12 +110,6 @@ class SubmissionControllerSpec extends CustomsImportsBaseSpec with ImportsTestDa
       http.requests.head.body shouldBe aRandomSubmitDeclaration.toXml.mkString
     }
 
-//    "save successfully submitted declaration" in simpleAcceptedSubmissionScenario(aRandomSubmitDeclaration) { (_, _, expectation, repo, _) =>
-//      val saved = repo.findAll().futureValue.head
-//      saved.lrn must be(aRandomSubmitDeclaration.declaration.value.functionalReferenceId)
-//      saved.eori must be(user.eori)
-//      saved.conversationId must be(expectation.resp.header("X-Conversation-ID").get)
-//    }
 
     "throw gateway timeout exception when request times out" in {
       val ex = new TimeoutException("API is not responding")

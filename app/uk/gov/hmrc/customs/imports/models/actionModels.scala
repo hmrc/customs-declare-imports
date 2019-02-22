@@ -18,8 +18,6 @@ package uk.gov.hmrc.customs.imports.models
 
 import play.api.mvc.{Request, WrappedRequest}
 
-import scala.xml.NodeSeq
-
 
 trait HasLocalReferenceNumber {
   val localReferenceNumber: LocalReferenceNumber
