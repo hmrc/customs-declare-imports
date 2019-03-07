@@ -18,25 +18,39 @@ package uk.gov.hmrc.customs.imports.connectors
 
 import com.google.inject.Inject
 import javax.inject.Singleton
+import models.{AuditConversation, AuditMetaData}
 import play.api.Logger
 import play.api.http.{ContentTypes, HeaderNames, Status}
+import play.api.libs.json.Json
 import play.api.mvc.Codec
 import uk.gov.hmrc.customs.imports.config.AppConfig
 import uk.gov.hmrc.customs.imports.controllers.CustomsHeaderNames
 import uk.gov.hmrc.customs.imports.repositories.SubmissionRepository
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.wco.dec.MetaData
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class CustomsDeclarationsConnector @Inject()(appConfig: AppConfig,
                                              httpClient: HttpClient,
-                                             submissionRepository: SubmissionRepository) {
+                                             submissionRepository: SubmissionRepository,
+                                             auditConnector: AuditConnector) {
 
   def submitImportDeclaration(eori: String, xmlPayload: String)
-                                      (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =
+                             (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] = {
+
+    auditConnector.sendExplicitAudit("Imports-UI-Dec-Submission", AuditMetaData(eori, MetaData.fromXml(xmlPayload).toProperties))
+
     postMetaData(appConfig.submitImportDeclarationUri, xmlPayload, eori)
+      .map { response =>
+        auditConnector.sendExplicitAudit("Imports-UI-Dec-Success-failure", AuditConversation(eori, response.conversationId))
+        response
+      }
+
+  }
 
   def cancelImportDeclaration(eori: String, xmlPayload: String)
                              (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CustomsDeclarationsResponse] =

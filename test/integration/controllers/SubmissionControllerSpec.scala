@@ -240,7 +240,7 @@ def simple4xxFailureSubmissionScenario(expectedStatus: Int, expectedEndStatus: I
 
   def withCustomsDeclarationsConnector(httpClient: HttpClient, submissionRepository: SubmissionRepository)
                                       (test: CustomsDeclarationsConnector => Unit): Unit = {
-    test(new CustomsDeclarationsConnector(appConfig, httpClient, submissionRepository))
+    test(new CustomsDeclarationsConnector(appConfig, httpClient, submissionRepository, mock[AuditConnector]))
   }
 
 }
