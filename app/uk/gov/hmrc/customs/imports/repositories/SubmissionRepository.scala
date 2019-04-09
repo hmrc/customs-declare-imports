@@ -19,11 +19,10 @@ package uk.gov.hmrc.customs.imports.repositories
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.commands.Command.CommandWithPackRunner
+import reactivemongo.api.Cursor
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.api.{Cursor, FailoverStrategy, ReadPreference}
 import reactivemongo.bson.BSONObjectID
-import reactivemongo.play.json.{JSONSerializationPack, _}
+import reactivemongo.play.json._
 import uk.gov.hmrc.customs.imports.models.{Declaration, Submission}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
@@ -52,7 +51,7 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
     find("eori" -> JsString(eori), "localReferenceNumber" -> JsString(localReferenceNumber)).map(_.headOption)
 
   def findByEori(eori: String): Future[Seq[Declaration]] = {
-    import this.collection.BatchCommands.AggregationFramework.{Descending, Filter, First, Group, Lookup, Match, Project, Push, Sort, Unwind}
+    import collection.BatchCommands.AggregationFramework.{Descending, Filter, First, Group, Lookup, Match, Project, Push, Sort, Unwind}
 
     collection.aggregatorContext[Declaration](
       Match(Json.obj("eori" -> eori)),
@@ -79,7 +78,7 @@ class SubmissionRepository @Inject()(implicit mc: ReactiveMongoComponent, ec: Ex
             "localReferenceNumber" -> 1,
             "mrn" -> 1,
             "submittedDateTime" -> 1,
-            "actions" -> Filter(Json.toJson("$actions"), "a", Json.obj("$ifNull" -> Json.arr("$$a._id", false)))))),
+            "actions" -> Filter(input = Json.toJson("$actions"), as = "a", cond = Json.obj("$ifNull" -> Json.arr("$$a._id", false)))))),
       allowDiskUse = true)
     .prepared.cursor.collect[Seq](-1, Cursor.FailOnError[Seq[Declaration]]())
   }
